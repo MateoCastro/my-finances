@@ -1,0 +1,199 @@
+<resources>
+    <string name="app_name">My Finances</string>
+
+    <!-- Navegación inferior -->
+    <string name="nav_trans">Trans.</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_accounts">Cuentas</string>
+    <string name="nav_inbox">Inbox</string>
+    <string name="nav_more">Más</string>
+
+    <!-- Comunes -->
+    <string name="income">Ingresos</string>
+    <string name="expenses">Gastos</string>
+    <string name="total">Total</string>
+    <string name="net">Neto</string>
+    <string name="cancel">Cancelar</string>
+    <string name="delete">Eliminar</string>
+    <string name="save">Guardar</string>
+    <string name="accept">Aceptar</string>
+    <string name="close">Cerrar</string>
+    <string name="back">Volver</string>
+    <string name="edit">Editar</string>
+    <string name="previous_month">Mes anterior</string>
+    <string name="next_month">Mes siguiente</string>
+    <string name="expense_type">Gasto</string>
+    <string name="income_type">Ingreso</string>
+    <string name="transfer">Transferencia</string>
+    <string name="transfer_short">Transf.</string>
+    <string name="no_category">Sin categoría</string>
+    <string name="no_description">Sin descripción</string>
+    <string name="category">Categoría</string>
+    <string name="account">Cuenta</string>
+    <string name="account_from">Cuenta origen</string>
+    <string name="account_to">Cuenta destino</string>
+    <string name="new_transaction">Nueva transacción</string>
+
+    <!-- Registro de transacciones -->
+    <string name="search_transactions">Buscar transacciones</string>
+    <string name="search_placeholder">Buscar transacciones…</string>
+    <string name="close_search">Cerrar búsqueda</string>
+    <string name="no_results">Sin resultados</string>
+    <string name="no_movements_this_month">Sin movimientos este mes</string>
+    <string name="cancel_selection">Cancelar selección</string>
+    <string name="delete_selected">Eliminar seleccionadas</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d seleccionada</item>
+        <item quantity="other">%d seleccionadas</item>
+    </plurals>
+    <plurals name="delete_transactions_title">
+        <item quantity="one">¿Eliminar %d transacción?</item>
+        <item quantity="other">¿Eliminar %d transacciones?</item>
+    </plurals>
+    <string name="delete_transactions_message">Esta acción no se puede deshacer y los saldos se recalcularán.</string>
+
+    <!-- Estadísticas -->
+    <string name="no_expenses_this_month">Sin gastos este mes</string>
+    <string name="no_income_this_month">Sin ingresos este mes</string>
+
+    <!-- Cuentas -->
+    <string name="accounts_title">Cuentas</string>
+    <string name="assets">Activos</string>
+    <string name="liabilities">Pasivos</string>
+    <string name="no_accounts_yet">No hay cuentas todavía</string>
+    <string name="type_cash">Efectivo</string>
+    <string name="type_bank">Cuentas</string>
+    <string name="type_savings">Ahorros</string>
+    <string name="type_cards">Tarjetas</string>
+    <string name="balance">Balance</string>
+    <plurals name="transactions_in_month">
+        <item quantity="one">%1$d transacción en %2$s</item>
+        <item quantity="other">%1$d transacciones en %2$s</item>
+    </plurals>
+
+    <!-- Inbox -->
+    <string name="inbox_title">Inbox</string>
+    <string name="inbox_subtitle">Transacciones por confirmar (SMS, extractos y voz)</string>
+    <plurals name="pending_count">
+        <item quantity="one">%d pendiente</item>
+        <item quantity="other">%d pendientes</item>
+    </plurals>
+    <string name="pending_chip">pendiente</string>
+    <string name="inbox_empty">El inbox está vacío</string>
+    <string name="show_original_sms">Ver SMS original</string>
+    <string name="hide_original_sms">Ocultar SMS original</string>
+    <string name="reject_all">Rechazar todo</string>
+    <plurals name="reject_all_title">
+        <item quantity="one">¿Rechazar %d transacción del inbox?</item>
+        <item quantity="other">¿Rechazar %d transacciones del inbox?</item>
+    </plurals>
+    <string name="reject_all_message">Se descartarán todas las transacciones por confirmar. No se puede deshacer.</string>
+    <string name="reject">Rechazar</string>
+    <string name="approve">Aprobar</string>
+    <string name="source_sms">SMS</string>
+    <string name="source_statement">Extracto</string>
+    <string name="amount_cop">Monto (COP)</string>
+    <string name="description">Descripción</string>
+
+    <!-- Formulario de transacción -->
+    <string name="amount">Monto</string>
+    <string name="date">Fecha</string>
+    <string name="add_note_placeholder">Agregar una nota…</string>
+
+    <!-- Categorías semilla (seed por idioma) -->
+    <string name="seed_acc_cash">Efectivo</string>
+    <string name="seed_cat_restaurants">Restaurantes</string>
+    <string name="seed_cat_groceries">Mercado</string>
+    <string name="seed_cat_transport">Transporte</string>
+    <string name="seed_cat_tech">Tecnología</string>
+    <string name="seed_cat_salary">Salario</string>
+    <string name="seed_cat_financial">Costos financieros</string>
+    <!-- Categorías -->
+    <string name="categories_title">Categorías</string>
+    <string name="categories_subtitle">Agregar, editar, eliminar categorías</string>
+    <string name="new_label">Nueva</string>
+    <plurals name="categories_count">
+        <item quantity="one">%d categoría</item>
+        <item quantity="other">%d categorías</item>
+    </plurals>
+    <string name="delete_named_title">¿Eliminar “%1$s”?</string>
+    <string name="no_expense_categories">Sin categorías de gasto</string>
+    <string name="no_income_categories">Sin categorías de ingreso</string>
+    <string name="new_category">Nueva categoría</string>
+    <string name="edit_category">Editar categoría</string>
+    <string name="name">Nombre</string>
+    <string name="type_label">Tipo</string>
+    <string name="color_label">Color</string>
+    <string name="category_preview_placeholder">Categoría</string>
+    <string name="rename">Renombrar</string>
+
+
+    <!-- Compras diferidas (Hito 3) -->
+    <string name="deferred_purchase">Compra diferida</string>
+    <string name="deferred_purchase_subtitle">El total se divide en cuotas</string>
+    <string name="installments_count">Número de cuotas</string>
+    <string name="estimated_installment">≈ %1$s por cuota</string>
+    <string name="tab_movements">Movimientos</string>
+    <string name="tab_deferred">Diferidos</string>
+    <plurals name="deferred_open_count">
+        <item quantity="one">%d compra diferida abierta</item>
+        <item quantity="other">%d compras diferidas abiertas</item>
+    </plurals>
+    <string name="no_deferred_purchases">Sin compras diferidas abiertas</string>
+    <string name="installments_progress">%1$d de %2$d cuotas facturadas</string>
+    <string name="pending_label">Pendiente: %1$s</string>
+    <string name="per_installment">%1$s/cuota</string>
+
+
+
+    <!-- Importar extracto (Hito 4) -->
+        <string name="statement_adjustment">Ajuste de saldo (extracto)</string>
+<string name="import_statement_title">Importar extracto</string>
+    <string name="import_statement_subtitle">Reconciliar movimientos del extracto (.xlsx)</string>
+    <string name="importing">Importando extracto…</string>
+    <string name="import_done_title">Extracto importado</string>
+    <string name="import_done_message">%1$d nuevas · %2$d cuotas actualizadas · %3$d ya existían</string>
+    <string name="import_error_title">No se pudo importar</string>
+    <string name="import_error_invalid">El archivo no parece un extracto válido.</string>
+    <string name="import_error_account">No hay una cuenta con terminación %1$s. Créala primero (sus últimos 4 dígitos).</string>
+    <string name="import_error_read">No se pudo leer el archivo. Intenta de nuevo.</string>
+
+    <!-- Cuentas: formulario CRUD -->
+    <string name="account_form_new">Nueva cuenta</string>
+    <string name="account_form_edit">Editar cuenta</string>
+    <string name="initial_balance">Saldo inicial</string>
+    <string name="statement_day">Día de corte</string>
+    <string name="payment_due_day">Día de pago</string>
+    <string name="last_four_digits">Últimos 4 dígitos</string>
+    <string name="day_range_hint">1–28</string>
+    <string name="archive_account">Archivar cuenta</string>
+    <string name="archive_account_title">¿Archivar “%1$s”?</string>
+    <string name="archive_account_message">La cuenta se ocultará de las listas. Sus transacciones se conservan.</string>
+    <string name="acc_type_cash">Efectivo</string>
+    <string name="acc_type_bank">Cuenta bancaria</string>
+    <string name="acc_type_savings">Ahorros</string>
+    <string name="acc_type_credit_card">Tarjeta de crédito</string>
+
+    <!-- Registro por voz (Hito 6) -->
+    <string name="voice_title">Registro por voz</string>
+    <string name="voice_capture">Registrar por voz</string>
+    <string name="voice_listening">Escuchando…</string>
+    <string name="voice_hint">Di algo como “gasté veinte mil en empanadas”</string>
+    <string name="voice_unavailable">El reconocimiento de voz no está disponible en este dispositivo.</string>
+    <string name="voice_permission_denied">Permiso de micrófono denegado. Actívalo para dictar transacciones.</string>
+    <string name="voice_no_language">Falta el modelo de voz en español. Descárgalo en Ajustes del teléfono → Idiomas / Entrada por voz.</string>
+    <string name="voice_network">Sin conexión para reconocer la voz. Conéctate, o descarga el modelo de voz en español para usarlo sin red.</string>
+    <string name="voice_error">No te entendí. Intenta de nuevo.</string>
+    <string name="voice_tile_label">Registrar gasto por voz</string>
+    <string name="source_voice">Voz</string>
+    <string name="show_transcription">Ver transcripción</string>
+    <string name="hide_transcription">Ocultar transcripción</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- Más -->
+    <string name="more_title">Más</string>
+    <string name="language">Idioma</string>
+    <string name="language_subtitle">Idioma de la aplicación</string>
+    <string name="language_es">Español</string>
+    <string name="language_en">English</string>
+</resources>

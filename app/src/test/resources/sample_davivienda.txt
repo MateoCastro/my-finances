@@ -1,0 +1,22 @@
+Extracto mayo
+Periodo de facturacion:
+23/Abr/2026 - 24/May/2026
+JUAN PRUEBA DEMO
+4283 **** **** 9999
+Pago minimo $300,000 Pago total $500,000 Saldo a favor $0
+Detalle aplicacion de pagos y abonos
+Fecha Total pagado Compras Avances Intereses Cuota de manejo Otros cargos Saldo a favor
+10May2026 $200,000
+Detalle de movimientos del mes
+Fecha Descripcion Valor No. cuotas Valor intereses Valor a pagar Saldo Davipuntos transaccion Tasa
+24May2026 TIENDA EJEMPLO $50,000 1 de 1 $0 $50,000 $0 1 0001111 28.02
+24May2026 CUOTA DE MANEJO $13,000 0 de 0 $0 $13,000 $0 0 0001112 0.00
+24May2026 INTERES CORRIEN $9,000 0 de 0 $0 $9,000 $0 0 0001113 0.00
+20May2026 SERVICIO DEMO $30,000 1 de 1 $0 $30,000 $0 2 0002222 28.02
+18May2026 AVANCE APP DEMO $400,000 1 de 1 $0 $400,000 $0 0 0004444 25.48
+Movimientos meses anteriores
+15Mar2026 COMPRA DIFERIDA DEMO $300,000 2 de 5 $5,000 $66,000 $198,000 0 0033333 25.48
+Detalle otros cargos
+Fecha Descripcion Numero de transaccion Valor a pagar
+24May2026 CUOTA DE SEGURO 00001114 $2,000
+Total otros cargos $2,000

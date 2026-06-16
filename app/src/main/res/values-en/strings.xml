@@ -1,0 +1,199 @@
+<resources>
+    <string name="app_name">My Finances</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_trans">Trans.</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_accounts">Accounts</string>
+    <string name="nav_inbox">Inbox</string>
+    <string name="nav_more">More</string>
+
+    <!-- Common -->
+    <string name="income">Income</string>
+    <string name="expenses">Expenses</string>
+    <string name="total">Total</string>
+    <string name="net">Net</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="save">Save</string>
+    <string name="accept">OK</string>
+    <string name="close">Close</string>
+    <string name="back">Back</string>
+    <string name="edit">Edit</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="expense_type">Expense</string>
+    <string name="income_type">Income</string>
+    <string name="transfer">Transfer</string>
+    <string name="transfer_short">Transfer</string>
+    <string name="no_category">No category</string>
+    <string name="no_description">No description</string>
+    <string name="category">Category</string>
+    <string name="account">Account</string>
+    <string name="account_from">From account</string>
+    <string name="account_to">To account</string>
+    <string name="new_transaction">New transaction</string>
+
+    <!-- Transactions register -->
+    <string name="search_transactions">Search transactions</string>
+    <string name="search_placeholder">Search transactions…</string>
+    <string name="close_search">Close search</string>
+    <string name="no_results">No results</string>
+    <string name="no_movements_this_month">No transactions this month</string>
+    <string name="cancel_selection">Cancel selection</string>
+    <string name="delete_selected">Delete selected</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="delete_transactions_title">
+        <item quantity="one">Delete %d transaction?</item>
+        <item quantity="other">Delete %d transactions?</item>
+    </plurals>
+    <string name="delete_transactions_message">This action cannot be undone and balances will be recalculated.</string>
+
+    <!-- Stats -->
+    <string name="no_expenses_this_month">No expenses this month</string>
+    <string name="no_income_this_month">No income this month</string>
+
+    <!-- Accounts -->
+    <string name="accounts_title">Accounts</string>
+    <string name="assets">Assets</string>
+    <string name="liabilities">Liabilities</string>
+    <string name="no_accounts_yet">No accounts yet</string>
+    <string name="type_cash">Cash</string>
+    <string name="type_bank">Accounts</string>
+    <string name="type_savings">Savings</string>
+    <string name="type_cards">Cards</string>
+    <string name="balance">Balance</string>
+    <plurals name="transactions_in_month">
+        <item quantity="one">%1$d transaction in %2$s</item>
+        <item quantity="other">%1$d transactions in %2$s</item>
+    </plurals>
+
+    <!-- Inbox -->
+    <string name="inbox_title">Inbox</string>
+    <string name="inbox_subtitle">Transactions to confirm (SMS, statements, voice)</string>
+    <plurals name="pending_count">
+        <item quantity="one">%d pending</item>
+        <item quantity="other">%d pending</item>
+    </plurals>
+    <string name="pending_chip">pending</string>
+    <string name="inbox_empty">Inbox is empty</string>
+    <string name="show_original_sms">Show original SMS</string>
+    <string name="hide_original_sms">Hide original SMS</string>
+    <string name="reject_all">Reject all</string>
+    <plurals name="reject_all_title">
+        <item quantity="one">Reject %d transaction in the inbox?</item>
+        <item quantity="other">Reject %d transactions in the inbox?</item>
+    </plurals>
+    <string name="reject_all_message">All pending transactions will be discarded. This can\'t be undone.</string>
+    <string name="reject">Reject</string>
+    <string name="approve">Approve</string>
+    <string name="source_sms">SMS</string>
+    <string name="source_statement">Statement</string>
+    <string name="amount_cop">Amount (COP)</string>
+    <string name="description">Description</string>
+
+    <!-- Transaction form -->
+    <string name="amount">Amount</string>
+    <string name="date">Date</string>
+    <string name="add_note_placeholder">Add a note…</string>
+
+    <!-- Categorías semilla (seed por idioma) -->
+    <string name="seed_acc_cash">Cash</string>
+    <string name="seed_cat_restaurants">Restaurants</string>
+    <string name="seed_cat_groceries">Groceries</string>
+    <string name="seed_cat_transport">Transport</string>
+    <string name="seed_cat_tech">Technology</string>
+    <string name="seed_cat_salary">Salary</string>
+    <string name="seed_cat_financial">Financial costs</string>
+    <!-- Categories -->
+    <string name="categories_title">Categories</string>
+    <string name="categories_subtitle">Add, edit, remove categories</string>
+    <string name="new_label">New</string>
+    <plurals name="categories_count">
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
+    </plurals>
+    <string name="delete_named_title">Delete “%1$s”?</string>
+    <string name="no_expense_categories">No expense categories</string>
+    <string name="no_income_categories">No income categories</string>
+    <string name="new_category">New category</string>
+    <string name="edit_category">Edit category</string>
+    <string name="name">Name</string>
+    <string name="type_label">Type</string>
+    <string name="color_label">Color</string>
+    <string name="category_preview_placeholder">Category</string>
+    <string name="rename">Rename</string>
+
+
+    <!-- Deferred purchases (Milestone 3) -->
+    <string name="deferred_purchase">Deferred purchase</string>
+    <string name="deferred_purchase_subtitle">Total is split into installments</string>
+    <string name="installments_count">Number of installments</string>
+    <string name="estimated_installment">≈ %1$s per installment</string>
+    <string name="tab_movements">Transactions</string>
+    <string name="tab_deferred">Deferred</string>
+    <plurals name="deferred_open_count">
+        <item quantity="one">%d open deferred purchase</item>
+        <item quantity="other">%d open deferred purchases</item>
+    </plurals>
+    <string name="no_deferred_purchases">No open deferred purchases</string>
+    <string name="installments_progress">%1$d of %2$d installments billed</string>
+    <string name="pending_label">Pending: %1$s</string>
+    <string name="per_installment">%1$s/installment</string>
+
+
+
+    <!-- Statement import (Milestone 4) -->
+        <string name="statement_adjustment">Statement balance adjustment</string>
+<string name="import_statement_title">Import statement</string>
+    <string name="import_statement_subtitle">Reconcile statement movements (.xlsx)</string>
+    <string name="importing">Importing statement…</string>
+    <string name="import_done_title">Statement imported</string>
+    <string name="import_done_message">%1$d new · %2$d installments updated · %3$d already existed</string>
+    <string name="import_error_title">Couldn\'t import</string>
+    <string name="import_error_invalid">The file doesn\'t look like a valid statement.</string>
+    <string name="import_error_account">No account ending in %1$s. Create it first (its last 4 digits).</string>
+    <string name="import_error_read">Couldn\'t read the file. Try again.</string>
+
+    <!-- Accounts: CRUD form -->
+    <string name="account_form_new">New account</string>
+    <string name="account_form_edit">Edit account</string>
+    <string name="initial_balance">Initial balance</string>
+    <string name="statement_day">Statement day</string>
+    <string name="payment_due_day">Payment due day</string>
+    <string name="last_four_digits">Last 4 digits</string>
+    <string name="day_range_hint">1–28</string>
+    <string name="archive_account">Archive account</string>
+    <string name="archive_account_title">Archive “%1$s”?</string>
+    <string name="archive_account_message">The account will be hidden from lists. Its transactions are kept.</string>
+    <string name="acc_type_cash">Cash</string>
+    <string name="acc_type_bank">Bank account</string>
+    <string name="acc_type_savings">Savings</string>
+    <string name="acc_type_credit_card">Credit card</string>
+
+    <!-- Voice entry (Hito 6) -->
+    <string name="voice_title">Voice entry</string>
+    <string name="voice_capture">Record by voice</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_hint">Say something like “spent twenty thousand on snacks”</string>
+    <string name="voice_unavailable">Speech recognition isn\'t available on this device.</string>
+    <string name="voice_permission_denied">Microphone permission denied. Enable it to dictate transactions.</string>
+    <string name="voice_no_language">The Spanish voice model is missing. Download it in phone Settings → Languages / Voice input.</string>
+    <string name="voice_network">No connection for speech recognition. Get online, or download the Spanish voice model to use it offline.</string>
+    <string name="voice_error">I didn\'t catch that. Try again.</string>
+    <string name="voice_tile_label">Log expense by voice</string>
+    <string name="source_voice">Voice</string>
+    <string name="show_transcription">Show transcription</string>
+    <string name="hide_transcription">Hide transcription</string>
+    <string name="retry">Retry</string>
+
+    <!-- More -->
+    <string name="more_title">More</string>
+    <string name="language">Language</string>
+    <string name="language_subtitle">App language</string>
+    <string name="language_es">Español</string>
+    <string name="language_en">English</string>
+</resources>
