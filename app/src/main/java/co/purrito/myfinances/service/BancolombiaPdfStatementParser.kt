@@ -18,6 +18,15 @@ import java.time.format.DateTimeFormatter
  * de antes es desc+autorización ([A-Z]\d{5} al final); lo de después,
  * valor, cuotas "N/M", valor cuota, % y saldo. Las cabeceras se
  * triplican en la extracción pero no traen fecha → se ignoran.
+ *
+ * MONEDA: las TC Bancolombia con cupo en dólares traen DOS estados en el
+ * mismo PDF, cada uno con su tabla de movimientos: "ESTADO DE CUENTA EN:
+ * DOLARES" y "ESTADO DE CUENTA EN: PESOS". Los montos en dólares vienen en
+ * el mismo formato ("5,94") y, sin distinguir la sección, se importaban
+ * como pesos (594 centavos). La app es COP-only (sin FX), así que SOLO se
+ * parsean los movimientos de la sección en PESOS; los de dólares se omiten.
+ * Por defecto se asume PESOS (extractos normales no traen el marcador) y se
+ * cambia a DÓLARES/PESOS al ver el encabezado de cada sección.
  * ===================================================================== */
 
 object BancolombiaPdfStatementParser {
@@ -35,11 +44,25 @@ object BancolombiaPdfStatementParser {
     fun parse(text: String): ParsedStatement {
         val lines = mutableListOf<ParsedStatementLine>()
 
+        // Sección de moneda vigente. Default PESOS: los extractos de un
+        // solo cupo (COP) no traen el marcador y deben parsearse igual.
+        var inPesos = true
+
         for (raw in text.lines()) {
+            // Encabezados de sección de moneda: cambian a qué tabla estamos
+            // leyendo. Solo importan los movimientos en pesos.
+            when {
+                raw.contains("EN: DOLARES") || raw.contains("Moneda: DOLARES") -> inPesos = false
+                raw.contains("EN: PESOS") || raw.contains("Moneda: PESOS") -> inPesos = true
+            }
+
             // Quitar '$' y '%' y colapsar espacios: la fecha y los números
             // quedan como tokens limpios, independiente del espaciado.
             val s = raw.replace("$", "").replace("%", "").trim().replace(Regex("\\s+"), " ")
             if (s.isEmpty()) continue
+
+            // Movimientos en dólares: se omiten (la app es COP-only, sin FX).
+            if (!inPesos) continue
 
             val dm = dateRe.find(s) ?: continue
             val prefix = s.substring(0, dm.range.first).trim()

@@ -68,4 +68,20 @@ class BancolombiaPdfStatementParserTest {
         assertEquals(3, vieja.installmentCurrent)
         assertEquals(6, vieja.installmentTotal)
     }
+
+    @Test
+    fun `los movimientos de la seccion en dolares se omiten`() {
+        // La app es COP-only: un movimiento en USD ("5,94") no debe entrar
+        // como si fueran 594 centavos de peso.
+        assertTrue(parsed.lines.none { it.rawDescription.contains("USA") })
+        assertTrue(parsed.lines.none { it.rawDescription == "STREAMING DEMO" })
+        assertNull(parsed.lines.firstOrNull { it.amountMinor == 5_94L })
+    }
+
+    @Test
+    fun `solo se parsean los cinco movimientos en pesos`() {
+        // 5 en pesos (interés, tienda, abono, viaje, compra vieja); los 2 en
+        // dólares quedan fuera.
+        assertEquals(5, parsed.lines.size)
+    }
 }

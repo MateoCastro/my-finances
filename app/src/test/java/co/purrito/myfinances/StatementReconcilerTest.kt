@@ -175,6 +175,42 @@ class StatementReconcilerTest {
     }
 
     @Test
+    fun `compra nueva 1 de N no la absorbe un plan viejo con igual total`() {
+        // Plan viejo "NETFLIX" de 6 cuotas que ya facturó 3. Llega una compra
+        // NUEVA "MERCADO PAGO 1/6" (otro comercio, otro monto). No debe
+        // tragarse como cuota del plan viejo: es una compra nueva al inbox.
+        val viejo = DeferredPurchase(
+            id = 7L, accountId = tc, merchant = "NETFLIX",
+            purchaseDateMillis = 0L, totalAmountMinor = 60_000_00,
+            totalInstallments = 6, billedInstallments = 3
+        )
+        val plan = StatementReconciler.reconcile(
+            tc,
+            listOf(line(date = 3 * day, amount = 999_000_00, desc = "MERCADO PAGO",
+                instCurrent = 1, instTotal = 6)),
+            emptyList(), listOf(viejo), financialCat, null, 0L
+        )
+        assertEquals(0, plan.updatedCount)
+        assertEquals(1, plan.newTransactions.size)
+        assertEquals(999_000_00, plan.newTransactions.single().amountMinor)
+    }
+
+    @Test
+    fun `plan correcto se elige por monto total cuando el comercio se repite`() {
+        // Dos planes MERCADO PAGO de 6 cuotas; la línea coincide en capital
+        // total con uno → se factura ESE, no el otro.
+        val a = DeferredPurchase(7L, tc, "MERCADO PAGO", 0L, 999_000_00, 6, 1)
+        val b = DeferredPurchase(8L, tc, "MERCADO PAGO", 0L, 210_798_00, 6, 1)
+        val plan = StatementReconciler.reconcile(
+            tc,
+            listOf(line(date = 3 * day, amount = 210_798_00, desc = "MERCADO PAGO",
+                instCurrent = 2, instTotal = 6)),
+            emptyList(), listOf(a, b), financialCat, null, 0L
+        )
+        assertEquals(8L, plan.installmentUpdates.single().deferredPurchaseId)
+    }
+
+    @Test
     fun `ambiguedad de cuotas se resuelve por comercio`() {
         val falabella = DeferredPurchase(7L, tc, "FALABELLA", 0L, 1_200_000_00, 12, 2)
         val alkosto = DeferredPurchase(8L, tc, "ALKOSTO", 0L, 900_000_00, 12, 1)

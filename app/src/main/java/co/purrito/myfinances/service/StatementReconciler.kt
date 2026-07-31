@@ -176,25 +176,40 @@ object StatementReconciler {
 
     /**
      * Empareja una línea "CUOTA x/y" con una compra diferida abierta.
-     * Criterio: mismo número total de cuotas y, si hay ambigüedad, que el
-     * comercio coincida (substring, en cualquier dirección). Si no hay
-     * candidato claro, devuelve null y la línea sigue el flujo normal.
+     *
+     * Criterio (de más a menos fuerte):
+     *  1) La línea debe AVANZAR el plan: su cuota actual va más allá de lo
+     *     ya facturado (`current > billedInstallments`). Esto impide que una
+     *     compra NUEVA "1/6" sea absorbida por un plan viejo del mismo nº de
+     *     cuotas que ya facturó alguna (antes `singleOrNull` la tragaba solo
+     *     por coincidir el total → la compra nueva no entraba al inbox).
+     *  2) Mismo capital total: el "valor movimiento" del extracto es el
+     *     total de la compra; si iguala `totalAmountMinor` del plan, es la
+     *     misma compra (señal única aunque el comercio se repita).
+     *  3) Correspondencia de comercio (substring en cualquier dirección).
+     *  4) Continuación (no primera cuota) con un único candidato que avanza:
+     *     se confía aunque el texto del extracto no matchee el comercio.
+     * Si nada aplica, devuelve null y la línea sigue el flujo normal (nueva).
      */
     private fun matchInstallment(
         line: ParsedStatementLine,
         openDeferred: List<DeferredPurchase>,
         consumedPurchases: Set<Long>
     ): DeferredPurchase? {
-        if (line.installmentCurrent == null || line.installmentTotal == null) return null
+        val current = line.installmentCurrent ?: return null
+        val total = line.installmentTotal ?: return null
         val candidates = openDeferred.filter {
-            it.id !in consumedPurchases && it.totalInstallments == line.installmentTotal
+            it.id !in consumedPurchases &&
+                it.totalInstallments == total &&
+                current > it.billedInstallments
         }
         if (candidates.isEmpty()) return null
-        candidates.singleOrNull()?.let { return it }
-        return candidates.firstOrNull { p ->
+        candidates.firstOrNull { it.totalAmountMinor == line.amountMinor }?.let { return it }
+        candidates.firstOrNull { p ->
             line.rawDescription.contains(p.merchant, ignoreCase = true) ||
                 p.merchant.contains(line.rawDescription, ignoreCase = true)
-        }
+        }?.let { return it }
+        return if (current > 1) candidates.singleOrNull() else null
     }
 
     /**

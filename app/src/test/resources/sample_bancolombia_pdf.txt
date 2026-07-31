@@ -1,11 +1,24 @@
 Tarjeta: *********4321Tarjeta: *********4321Tarjeta: *********4321
 Información de la Tarjeta *4321
+Moneda: DOLARESMoneda: DOLARESMoneda: DOLARES
+Periodo facturado
+15 abr - 18 may. 2026
+Pago Total:
+$ 42,00$ 42,00$ 42,00
+NIT: 890.000.000-0 ESTADO DE CUENTA EN: DOLARES
+Número deNúmero deNúmero de
+autorizaciónautorización FechaFecha MovimientosMovimientos ValorValor
+STREAMING DEMOZ00111 10/05/2026 $ 5,94 1/1 $ 5,94 0,0000 % 00,0000 % $ 0,00
+TIENDA USA DEMOZ00222 08/05/2026 $ 36,06 1/1 $ 36,06 0,0000 % 00,0000 % $ 0,00
+Información de la Tarjeta *4321
+Moneda: PESOSMoneda: PESOSMoneda: PESOS
 Periodo facturado
 15 abr - 18 may. 2026
 Pago Total:
 $ 0,00$ 0,00$ 0,00
 Pago Total:
 $ 1.200.000,00$ 1.200.000,00$ 1.200.000,00
+NIT: 890.000.000-0 ESTADO DE CUENTA EN: PESOS
 Número deNúmero deNúmero de
 autorizaciónautorización FechaFecha MovimientosMovimientos ValorValor
 INTERESES CORRIENTES18/05/2026 $ 5.000,00 $ 5.000,00 $ 0,00
