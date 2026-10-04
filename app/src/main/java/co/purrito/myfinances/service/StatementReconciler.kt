@@ -189,7 +189,7 @@ object StatementReconciler {
                     t.id !in consumedTx &&
                         abs(t.amountMinor - line.amountMinor) < AMOUNT_TOLERANCE_MINOR &&
                         abs(t.dateMillis - line.dateMillis) <= dayToleranceMillis &&
-                        effectOn(t, accountId).sign == lineEffect.sign
+                        t.effectOn(accountId).sign == lineEffect.sign
                 }
                 .minWithOrNull(
                     compareBy<Transaction> { abs(it.amountMinor - line.amountMinor) }
@@ -308,7 +308,7 @@ object StatementReconciler {
         }
 
         val projected = ledger.initialBalanceMinor +
-            counted.sumOf { effectOn(it, accountId) } +
+            counted.sumOf { it.effectOn(accountId) } +
             outcomes.filterIsInstance<LineOutcome.New>().sumOf { balanceEffect(it.line) }
         return BalanceCheck(
             statementBalanceMinor - projected,
@@ -365,17 +365,6 @@ object StatementReconciler {
         // TRANSFER: avance (TC origen) suma deuda; pago/abono la reduce.
         TransactionType.TRANSFER ->
             if (line.cardIsOrigin) -line.amountMinor else line.amountMinor
-    }
-
-    /** Efecto de una transacción de la app sobre el saldo de la tarjeta. */
-    private fun effectOn(t: Transaction, cardId: Long): Long = when (t.type) {
-        TransactionType.INCOME -> if (t.accountId == cardId) t.amountMinor else 0
-        TransactionType.EXPENSE -> if (t.accountId == cardId) -t.amountMinor else 0
-        TransactionType.TRANSFER -> when (cardId) {
-            t.accountId -> -t.amountMinor
-            t.counterAccountId -> t.amountMinor
-            else -> 0
-        }
     }
 
     /** Huella de deduplicación del extracto: incluye el nº de línea. */
