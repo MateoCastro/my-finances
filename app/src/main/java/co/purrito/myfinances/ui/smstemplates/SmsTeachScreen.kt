@@ -80,6 +80,7 @@ import co.purrito.myfinances.ui.theme.IncomeGreen
 import co.purrito.myfinances.ui.theme.PrimaryBlue
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
+import androidx.compose.runtime.ReadOnlyComposable
 
 /* =====================================================================
  * Enseñar un SMS (Hito 7):
@@ -93,8 +94,8 @@ import com.composables.icons.lucide.Lucide
  *  3. Guardar → ofrece llevar al inbox los SMS que se habían perdido.
  * ===================================================================== */
 
-private val AmountHighlight = PrimaryBlue
-private val MerchantHighlight = AccentPink
+private val AmountHighlight: Color @Composable @ReadOnlyComposable get() = PrimaryBlue
+private val MerchantHighlight: Color @Composable @ReadOnlyComposable get() = AccentPink
 
 @Composable
 fun SmsTeachScreen(

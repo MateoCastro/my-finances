@@ -94,6 +94,8 @@ import com.composables.icons.lucide.Mic
 import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Trash2
 import com.composables.icons.lucide.X
+import androidx.compose.runtime.ReadOnlyComposable
+import co.purrito.myfinances.ui.theme.AppTheme
 
 /* =====================================================================
  * Inbox SMS — implementación del mock de diseño:
@@ -119,16 +121,18 @@ import com.composables.icons.lucide.X
 
 // Pill "pending" del mock: ámbar vivo con borde (amber-500/amber-400),
 // no el marrón apagado anterior.
-private val amber500 = Color(0xFFF59E0B)
-private val amber400 = Color(0xFFFBBF24)
-private val pendingChip = ChipColors(
-    container = amber500.copy(alpha = 0.15f), content = amber400
-)
-private val pendingBorder = BorderStroke(1.dp, amber500.copy(alpha = 0.30f))
+private val pendingChip: ChipColors
+    @Composable @ReadOnlyComposable
+    get() = ChipColors(
+        container = AppTheme.warning.copy(alpha = 0.15f), content = AppTheme.warningText
+    )
+private val pendingBorder: BorderStroke
+    @Composable @ReadOnlyComposable
+    get() = BorderStroke(1.dp, AppTheme.warning.copy(alpha = 0.30f))
 // Mock: bg-primary/15 + ícono primary (azul del tema)
-private val smsBubble = ChipColors(
-    container = PrimaryBlue.copy(alpha = 0.15f), content = PrimaryBlue
-)
+private val smsBubble: ChipColors
+    @Composable @ReadOnlyComposable
+    get() = ChipColors(container = PrimaryBlue.copy(alpha = 0.15f), content = PrimaryBlue)
 
 @Composable
 fun InboxScreen(
@@ -762,7 +766,7 @@ private fun PendingCard(
                         shape = MaterialTheme.shapes.large,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = IncomeGreen,
-                            contentColor = Color(0xFF010306)
+                            contentColor = AppTheme.onIncome
                         ),
                         modifier = Modifier.weight(1f)
                     ) { Text(stringResource(R.string.approve)) }

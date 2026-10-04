@@ -50,6 +50,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.SortedMap
+import androidx.compose.runtime.ReadOnlyComposable
 
 /* =====================================================================
  * Sección de "día" del registro (registro general y detalle de
@@ -78,6 +79,8 @@ fun groupTransactionsByDay(
         Instant.ofEpochMilli(it.transaction.dateMillis).atZone(zone).toLocalDate()
     }.toSortedMap(compareByDescending { it })
 
+@Composable
+@ReadOnlyComposable
 private fun dayBadgeColors(day: DayOfWeek): ChipColors = when (day) {
     DayOfWeek.SUNDAY -> DayBadgeSunday
     DayOfWeek.SATURDAY -> DayBadgeSaturday

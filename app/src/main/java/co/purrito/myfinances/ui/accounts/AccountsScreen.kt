@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -77,6 +78,8 @@ private val groupOrder = listOf(
     AccountType.CASH, AccountType.BANK, AccountType.SAVINGS, AccountType.CREDIT_CARD
 )
 
+@Composable
+@ReadOnlyComposable
 private fun balanceColor(balanceMinor: Long): Color =
     if (balanceMinor < 0) ExpenseRed else IncomeGreen
 

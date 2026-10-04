@@ -3,47 +3,65 @@ package co.purrito.myfinances.ui.theme
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 
 /* =====================================================================
- * El tema canónico de la app es el oscuro (el diseño de referencia es
- * dark-only). El claro existe como degradación razonable, no como
- * diseño de primera clase.
+ * El tema sigue el modo del sistema: oscuro (el diseño de referencia,
+ * "Deep Navy Dark") o claro (su contraparte derivada). Ambos esquemas
+ * salen de la misma [AppColors], así Material3 y los tokens propios
+ * (montos, chips, acentos) nunca se desincronizan.
  *
  * Sin dynamic color: pisaría la paleta del diseño con los colores del
  * wallpaper del usuario.
  * ===================================================================== */
 
-private val DarkColorScheme = darkColorScheme(
+private fun AppColors.toColorScheme(): ColorScheme {
     // primary azul (= --primary/--ring del CSS): focus de inputs,
     // selección del date picker. El acento rosa de ACCIÓN se aplica
     // directo donde corresponde (FAB, bottom nav).
-    primary = PrimaryBlue,
-    onPrimary = FabContent,
-    primaryContainer = PrimaryBlue,
-    onPrimaryContainer = FabContent,
-    secondary = DarkOnSurfaceVariant,
-    tertiary = PrimaryBlue,
-    background = DarkBackground,
-    surface = DarkSurface,
-    surfaceVariant = DarkSurfaceVariant,
-    onBackground = DarkOnSurface,
-    onSurface = DarkOnSurface,
-    onSurfaceVariant = DarkOnSurfaceVariant,
-    outline = DarkOutline,
-    error = ExpenseRed
-)
+    val base = if (isLight) lightColorScheme() else darkColorScheme()
+    val scheme = base.copy(
+        primary = primaryBlue,
+        onPrimary = FabContent,
+        primaryContainer = primaryBlue,
+        onPrimaryContainer = FabContent,
+        secondary = onSurfaceVariant,
+        tertiary = primaryBlue,
+        background = background,
+        surface = surface,
+        surfaceVariant = surfaceVariant,
+        onBackground = onSurface,
+        onSurface = onSurface,
+        onSurfaceVariant = onSurfaceVariant,
+        outline = outline,
+        error = expense
+    )
+    // Los contenedores por defecto de M3 claro son lavanda (date picker,
+    // menús sin color explícito): se neutralizan a la gama de la app.
+    // En oscuro se conservan los de siempre.
+    return if (!isLight) scheme else scheme.copy(
+        surfaceContainerLowest = surface,
+        surfaceContainerLow = surface,
+        surfaceContainer = surface,
+        surfaceContainerHigh = surface,
+        surfaceContainerHighest = surfaceVariant,
+        surfaceBright = surface,
+        surfaceDim = surfaceVariant,
+        secondaryContainer = surfaceVariant,
+        onSecondaryContainer = onSurface,
+        outlineVariant = outline
+    )
+}
 
-private val LightColorScheme = lightColorScheme(
-    primary = PrimaryBlue,
-    onPrimary = FabContent,
-    error = ExpenseRed
-)
+private val DarkColorScheme = DarkAppColors.toColorScheme()
+private val LightColorScheme = LightAppColors.toColorScheme()
 
 /**
  * Springs de los componentes de Material3 (sheets, drags, etc.):
@@ -86,11 +104,15 @@ fun MyFinancesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
-        motionScheme = SmoothMotionScheme,
-        typography = Typography,
-        shapes = Shapes,
-        content = content
-    )
+    CompositionLocalProvider(
+        LocalAppColors provides if (darkTheme) DarkAppColors else LightAppColors
+    ) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+            motionScheme = SmoothMotionScheme,
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
 }
