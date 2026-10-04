@@ -381,9 +381,13 @@ vivían en BD, pero no había forma de editarlas sin código.
   Cuenta sugerida por los últimos 4 del SMS.
 - Las plantillas enseñadas se prueban ANTES que las de fábrica.
 - Recuperación (`service/SmsRecovery.kt`): SMS de los últimos 30 días que
-  hoy se reconocen y no están en la app (dedup por externalRef y por
-  `rawText`); el usuario ELIGE cuáles van al inbox (no se agregan solos: un
-  SMS rechazado a propósito no debe resucitar).
+  hoy se reconocen y no están en la app; el usuario ELIGE cuáles van al
+  inbox (no se agregan solos: un SMS rechazado a propósito no debe
+  resucitar). "Ya está" = mismo SMS (externalRef / `rawText`) **o** un
+  movimiento de la misma cuenta con monto ±1 peso, mismo sentido y fecha
+  ±1 día, en cualquier status (2026-10-03: sin esto ofrecía de nuevo lo
+  registrado a mano o importado del extracto). `effectOn` compartido con
+  el reconciliador en `service/AccountEffect.kt`.
 - Aviso temprano: SMS de código corto con pinta de monto que ninguna
   plantilla reconoce → notificación (`service/SmsNotifier.kt`,
   POST_NOTIFICATIONS) que abre "Enseñar" con ese SMS
