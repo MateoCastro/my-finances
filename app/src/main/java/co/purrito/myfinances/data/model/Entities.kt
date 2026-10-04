@@ -1,5 +1,6 @@
 package co.purrito.myfinances.data.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -214,7 +215,16 @@ data class Transaction(
      * mostrarlo como preview en el inbox ("Ver SMS original").
      * null para transacciones de otras fuentes.
      */
-    val rawText: String? = null
+    val rawText: String? = null,
+    /**
+     * true cuando un extracto ya CONFIRMÓ este movimiento (o nació de
+     * uno). La verificación de saldo del extracto solo cuenta estos: lo
+     * no confirmado (compras del próximo corte, movimientos en dólares que
+     * el "Pago total" en pesos no incluye) no genera ajustes. Solo tiene
+     * sentido en tarjetas de crédito. (DB v5)
+     */
+    @ColumnInfo(defaultValue = "0")
+    val reconciled: Boolean = false
 )
 
 // ---------------------------------------------------------------------

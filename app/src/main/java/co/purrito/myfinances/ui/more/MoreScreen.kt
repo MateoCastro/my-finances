@@ -33,7 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.unit.dp
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,7 +44,9 @@ import co.purrito.myfinances.R
 import co.purrito.myfinances.ui.categories.CategoriesSheet
 import co.purrito.myfinances.ui.components.AppCard
 import co.purrito.myfinances.ui.components.PillTabs
-import co.purrito.myfinances.ui.statementimport.ErrorKind
+import co.purrito.myfinances.service.ImportErrorKind
+import co.purrito.myfinances.ui.formatCop
+import co.purrito.myfinances.ui.formatUsd
 import co.purrito.myfinances.ui.statementimport.ImportState
 import co.purrito.myfinances.ui.statementimport.StatementImportViewModel
 import com.composables.icons.lucide.ChevronRight
@@ -144,11 +149,37 @@ private fun ImportFeedback(state: ImportState, onDismiss: () -> Unit) {
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
             title = { Text(stringResource(R.string.import_done_title)) },
             text = {
-                Text(
-                    state.accountName + "\n\n" + stringResource(
-                        R.string.import_done_message,
-                        state.newCount, state.updatedCount, state.duplicateCount
+                val r = state.result
+                // Resumen + explicación de la verificación de saldo: el
+                // ajuste (si lo hay) y lo que quedó fuera de ella, para que
+                // una diferencia nunca sea una caja negra.
+                val parts = buildList {
+                    add(r.accountName)
+                    add(
+                        stringResource(
+                            R.string.import_done_message,
+                            r.newCount, r.updatedCount, r.duplicateCount
+                        )
                     )
+                    r.adjustmentMinor?.let {
+                        add(stringResource(R.string.import_adjustment_line, formatCop(it)))
+                    }
+                    if (r.unreconciledCount > 0) add(
+                        pluralStringResource(
+                            R.plurals.import_unreconciled, r.unreconciledCount,
+                            r.unreconciledCount, formatCop(r.unreconciledMinor)
+                        )
+                    )
+                    if (r.foreignPurchaseCount > 0) add(
+                        pluralStringResource(
+                            R.plurals.import_foreign_purchases, r.foreignPurchaseCount,
+                            r.foreignPurchaseCount, formatUsd(r.foreignPurchasesMinor)
+                        )
+                    )
+                }
+                Text(
+                    parts.joinToString("\n\n"),
+                    modifier = Modifier.verticalScroll(rememberScrollState())
                 )
             },
             confirmButton = {
@@ -162,10 +193,10 @@ private fun ImportFeedback(state: ImportState, onDismiss: () -> Unit) {
             text = {
                 Text(
                     when (state.kind) {
-                        ErrorKind.INVALID_FILE -> stringResource(R.string.import_error_invalid)
-                        ErrorKind.ACCOUNT_NOT_FOUND ->
+                        ImportErrorKind.INVALID_FILE -> stringResource(R.string.import_error_invalid)
+                        ImportErrorKind.ACCOUNT_NOT_FOUND ->
                             stringResource(R.string.import_error_account, state.arg ?: "")
-                        ErrorKind.READ_FAILED -> stringResource(R.string.import_error_read)
+                        ImportErrorKind.READ_FAILED -> stringResource(R.string.import_error_read)
                     }
                 )
             },

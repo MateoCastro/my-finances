@@ -59,6 +59,7 @@ import co.purrito.myfinances.ui.theme.ChipColors
 import co.purrito.myfinances.ui.theme.ExpenseRed
 import co.purrito.myfinances.ui.theme.IncomeGreen
 import co.purrito.myfinances.ui.theme.chipColorsFor
+import java.time.YearMonth
 import kotlin.math.roundToInt
 
 /* =====================================================================
@@ -85,6 +86,8 @@ private fun colorsFor(total: CategoryTotal): ChipColors =
 
 @Composable
 fun StatsScreen(
+    // Tocar una categoría abre sus movimientos del mes (null = sin categoría)
+    onCategoryClick: (categoryId: Long?, type: TransactionType, month: YearMonth) -> Unit,
     viewModel: StatsViewModel = viewModel()
 ) {
     val month by viewModel.month.collectAsState()
@@ -191,7 +194,11 @@ fun StatsScreen(
                     }
 
                     item {
-                        CategoryCard(totals = totals, grandTotal = grandTotal)
+                        CategoryCard(
+                            totals = totals,
+                            grandTotal = grandTotal,
+                            onCategoryClick = { onCategoryClick(it, type, month) }
+                        )
                     }
                 }
             }
@@ -336,7 +343,8 @@ private fun DonutChart(
 @Composable
 private fun CategoryCard(
     totals: List<CategoryTotal>,
-    grandTotal: Long
+    grandTotal: Long,
+    onCategoryClick: (categoryId: Long?) -> Unit
 ) {
     AppCard(
         shape = MaterialTheme.shapes.large,
@@ -347,7 +355,8 @@ private fun CategoryCard(
                 CategoryRow(
                     total = total,
                     colors = colorsFor(total),
-                    percent = total.totalMinor * 100f / grandTotal
+                    percent = total.totalMinor * 100f / grandTotal,
+                    onClick = { onCategoryClick(total.categoryId) }
                 )
                 if (index < totals.lastIndex) {
                     HorizontalDivider(
@@ -364,11 +373,13 @@ private fun CategoryCard(
 private fun CategoryRow(
     total: CategoryTotal,
     colors: ChipColors,
-    percent: Float
+    percent: Float,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

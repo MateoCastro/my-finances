@@ -79,6 +79,12 @@ class BancolombiaPdfStatementParserTest {
     }
 
     @Test
+    fun `las compras en dolares se cuentan para avisarlas en el resumen`() {
+        assertEquals(2, parsed.foreignPurchaseCount)
+        assertEquals(42_00L, parsed.foreignPurchasesMinor) // 5,94 + 36,06 USD
+    }
+
+    @Test
     fun `solo se parsean los cinco movimientos en pesos`() {
         // 5 en pesos (interés, tienda, abono, viaje, compra vieja); los 2 en
         // dólares quedan fuera.

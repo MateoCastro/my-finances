@@ -75,6 +75,7 @@ import co.purrito.myfinances.data.model.TransactionType
 import co.purrito.myfinances.ui.components.Chip
 import co.purrito.myfinances.ui.components.DropdownField
 import co.purrito.myfinances.ui.components.PillTabs
+import co.purrito.myfinances.ui.components.ThousandsSeparatorTransformation
 import co.purrito.myfinances.ui.formatCop
 import co.purrito.myfinances.ui.formatShortDateTime
 import co.purrito.myfinances.ui.theme.AccentPink
@@ -283,9 +284,8 @@ private fun PendingCard(
     var showSms by rememberSaveable(transaction.id) { mutableStateOf(false) }
     var editing by rememberSaveable(transaction.id) { mutableStateOf(false) }
     var type by rememberSaveable(transaction.id) { mutableStateOf(transaction.type) }
-    var amountText by rememberSaveable(transaction.id) {
-        mutableStateOf((transaction.amountMinor / 100).toString())
-    }
+    val initialAmountText = (transaction.amountMinor / 100).toString()
+    var amountText by rememberSaveable(transaction.id) { mutableStateOf(initialAmountText) }
     var displayName by rememberSaveable(transaction.id, stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(transaction.description ?: ""))
     }
@@ -296,7 +296,13 @@ private fun PendingCard(
     var deferred by rememberSaveable(transaction.id) { mutableStateOf(false) }
     var installmentsText by rememberSaveable(transaction.id) { mutableStateOf("") }
 
-    val amountMinor: Long? = amountText.toLongOrNull()?.let { it * 100 }
+    // El campo es de pesos enteros: si no se toca, se conserva el monto
+    // EXACTO (los extractos traen centavos, ej. intereses 45.678,42). Si
+    // se truncaran, al reimportar el extracto la línea ya no se reconoce
+    // como duplicada.
+    val amountMinor: Long? =
+        if (amountText == initialAmountText) transaction.amountMinor
+        else amountText.toLongOrNull()?.let { it * 100 }
 
     // Diferido: el SMS no trae el número de cuotas (eso solo llega con
     // el extracto), así que se marca aquí al confirmar — el usuario sí
@@ -518,6 +524,7 @@ private fun PendingCard(
                                 amountText = input.filter { it.isDigit() }.take(12)
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            visualTransformation = ThousandsSeparatorTransformation,
                             leading = {
                                 Text(
                                     "$",
@@ -733,7 +740,7 @@ private fun PendingCard(
                             // Volver a los valores capturados/sugeridos
                             editing = false
                             type = transaction.type
-                            amountText = (transaction.amountMinor / 100).toString()
+                            amountText = initialAmountText
                             displayName = TextFieldValue(transaction.description ?: "")
                             suggestionsOpen = false
                             categoryId = transaction.categoryId

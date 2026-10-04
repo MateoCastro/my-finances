@@ -153,6 +153,15 @@
     <string name="importing">Importing statement…</string>
     <string name="import_done_title">Statement imported</string>
     <string name="import_done_message">%1$d new · %2$d installments updated · %3$d already existed</string>
+    <string name="import_adjustment_line">Pending balance adjustment: %1$s (review it in the Inbox).</string>
+    <plurals name="import_unreconciled">
+        <item quantity="one">%1$d card transaction (%2$s) does not appear in any statement yet, so it was left out of the adjustment: it may be in dollars, from the next cycle or a mistake.</item>
+        <item quantity="other">%1$d card transactions (%2$s) do not appear in any statement yet, so they were left out of the adjustment: they may be in dollars, from the next cycle or mistakes.</item>
+    </plurals>
+    <plurals name="import_foreign_purchases">
+        <item quantity="one">The statement has %1$d purchase in dollars (%2$s) that is not imported: record it in pesos if you don\'t have it.</item>
+        <item quantity="other">The statement has %1$d purchases in dollars (%2$s) that are not imported: record them in pesos if you don\'t have them.</item>
+    </plurals>
     <string name="import_error_title">Couldn\'t import</string>
     <string name="import_error_invalid">The file doesn\'t look like a valid statement.</string>
     <string name="import_error_account">No account ending in %1$s. Create it first (its last 4 digits).</string>

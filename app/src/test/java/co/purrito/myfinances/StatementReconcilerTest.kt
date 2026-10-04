@@ -5,6 +5,7 @@ import co.purrito.myfinances.data.model.Transaction
 import co.purrito.myfinances.data.model.TransactionSource
 import co.purrito.myfinances.data.model.TransactionStatus
 import co.purrito.myfinances.data.model.TransactionType
+import co.purrito.myfinances.service.CardLedger
 import co.purrito.myfinances.service.LineOutcome
 import co.purrito.myfinances.service.ParsedStatementLine
 import co.purrito.myfinances.service.StatementReconciler
@@ -40,6 +41,12 @@ class StatementReconcilerTest {
         dateMillis = date, source = TransactionSource.MANUAL, status = TransactionStatus.CONFIRMED
     )
 
+    /** Tarjeta sin movimientos en la app, salvo el saldo inicial. */
+    private fun ledger(initial: Long, txs: List<Transaction> = emptyList(), cutoff: Long = 100 * day) =
+        CardLedger(initialBalanceMinor = initial, transactions = txs, cutoffMillis = cutoff)
+
+    private val bank = 1L
+
     // --- Deduplicación ------------------------------------------------
 
     @Test
@@ -52,7 +59,7 @@ class StatementReconcilerTest {
             openDeferred = emptyList(),
             financialCategoryId = financialCat,
             statementBalanceMinor = null,
-            computedBalanceMinor = 0L
+            ledger = null
         )
         assertEquals(1, plan.duplicateCount)
         assertEquals(0, plan.newTransactions.size)
@@ -64,7 +71,7 @@ class StatementReconcilerTest {
         val existing = listOf(confirmedTx(10L, date = 5 * day, amount = 50_000_00))
         val plan = StatementReconciler.reconcile(
             tc, listOf(line(date = 6 * day, amount = 50_000_00, desc = "EXITO")),
-            existing, emptyList(), financialCat, null, 0L
+            existing, emptyList(), financialCat, null, null
         )
         assertEquals(1, plan.duplicateCount)
     }
@@ -74,7 +81,7 @@ class StatementReconcilerTest {
         val existing = listOf(confirmedTx(10L, date = 5 * day, amount = 50_000_00))
         val plan = StatementReconciler.reconcile(
             tc, listOf(line(date = 7 * day, amount = 50_000_00, desc = "EXITO")),
-            existing, emptyList(), financialCat, null, 0L
+            existing, emptyList(), financialCat, null, null
         )
         assertEquals(0, plan.duplicateCount)
         assertEquals(1, plan.newTransactions.size)
@@ -89,7 +96,7 @@ class StatementReconcilerTest {
                 line(date = 5 * day, amount = 50_000_00, desc = "EXITO"),
                 line(date = 5 * day, amount = 50_000_00, desc = "EXITO")
             ),
-            existing, emptyList(), financialCat, null, 0L
+            existing, emptyList(), financialCat, null, null
         )
         assertEquals(1, plan.duplicateCount)
         assertEquals(1, plan.newTransactions.size) // la segunda es nueva
@@ -101,7 +108,7 @@ class StatementReconcilerTest {
     fun `linea nueva nace PENDING source STATEMENT`() {
         val plan = StatementReconciler.reconcile(
             tc, listOf(line(date = 3 * day, amount = 12_000_00, desc = "PAYU*RAPPI BOG")),
-            emptyList(), emptyList(), financialCat, null, 0L
+            emptyList(), emptyList(), financialCat, null, null
         )
         val tx = plan.newTransactions.single()
         assertEquals(TransactionStatus.PENDING, tx.status)
@@ -116,7 +123,7 @@ class StatementReconcilerTest {
         val plan = StatementReconciler.reconcile(
             tc,
             listOf(line(date = 3 * day, amount = 8_900_00, desc = "INTERES CORRIENTE", charge = true)),
-            emptyList(), emptyList(), financialCat, null, 0L
+            emptyList(), emptyList(), financialCat, null, null
         )
         assertEquals(financialCat, plan.newTransactions.single().categoryId)
     }
@@ -125,7 +132,7 @@ class StatementReconcilerTest {
     fun `mismo extracto produce el mismo externalRef por linea`() {
         fun ref() = StatementReconciler.reconcile(
             tc, listOf(line(date = 3 * day, amount = 12_000_00, desc = "RAPPI")),
-            emptyList(), emptyList(), financialCat, null, 0L
+            emptyList(), emptyList(), financialCat, null, null
         ).newTransactions.single().externalRef
         assertEquals(ref(), ref())
     }
@@ -147,7 +154,7 @@ class StatementReconcilerTest {
             openDeferred = listOf(purchase),
             financialCategoryId = financialCat,
             statementBalanceMinor = null,
-            computedBalanceMinor = 0L
+            ledger = null
         )
         assertEquals(0, plan.newTransactions.size)
         assertEquals(1, plan.updatedCount)
@@ -169,7 +176,7 @@ class StatementReconcilerTest {
             tc,
             listOf(line(date = 3 * day, amount = 110_000_00, desc = "FALABELLA",
                 instCurrent = 12, instTotal = 12)),
-            emptyList(), listOf(purchase), financialCat, null, 0L
+            emptyList(), listOf(purchase), financialCat, null, null
         )
         assertTrue(plan.installmentUpdates.single().closed)
     }
@@ -188,7 +195,7 @@ class StatementReconcilerTest {
             tc,
             listOf(line(date = 3 * day, amount = 999_000_00, desc = "MERCADO PAGO",
                 instCurrent = 1, instTotal = 6)),
-            emptyList(), listOf(viejo), financialCat, null, 0L
+            emptyList(), listOf(viejo), financialCat, null, null
         )
         assertEquals(0, plan.updatedCount)
         assertEquals(1, plan.newTransactions.size)
@@ -205,7 +212,7 @@ class StatementReconcilerTest {
             tc,
             listOf(line(date = 3 * day, amount = 210_798_00, desc = "MERCADO PAGO",
                 instCurrent = 2, instTotal = 6)),
-            emptyList(), listOf(a, b), financialCat, null, 0L
+            emptyList(), listOf(a, b), financialCat, null, null
         )
         assertEquals(8L, plan.installmentUpdates.single().deferredPurchaseId)
     }
@@ -218,7 +225,7 @@ class StatementReconcilerTest {
             tc,
             listOf(line(date = 3 * day, amount = 80_000_00, desc = "ALKOSTO BOG CUOTA 2/12",
                 instCurrent = 2, instTotal = 12)),
-            emptyList(), listOf(falabella, alkosto), financialCat, null, 0L
+            emptyList(), listOf(falabella, alkosto), financialCat, null, null
         )
         assertEquals(8L, plan.installmentUpdates.single().deferredPurchaseId)
     }
@@ -230,7 +237,7 @@ class StatementReconcilerTest {
         val plan = StatementReconciler.reconcile(
             tc, listOf(line(date = 3 * day, amount = 50_000_00, desc = "X")),
             emptyList(), emptyList(), financialCat, statementBalanceMinor = null,
-            computedBalanceMinor = -100_000_00
+            ledger = ledger(-100_000_00)
         )
         assertNull(plan.balanceAdjustment)
     }
@@ -243,7 +250,7 @@ class StatementReconcilerTest {
             tc, listOf(line(date = 3 * day, amount = 50_000_00, desc = "X")),
             emptyList(), emptyList(), financialCat,
             statementBalanceMinor = -150_000_00,
-            computedBalanceMinor = -100_000_00
+            ledger = ledger(-100_000_00)
         )
         assertNull(plan.balanceAdjustment)
     }
@@ -255,7 +262,7 @@ class StatementReconcilerTest {
             tc, listOf(line(date = 3 * day, amount = 50_000_00, desc = "X")),
             emptyList(), emptyList(), financialCat,
             statementBalanceMinor = -158_900_00,
-            computedBalanceMinor = -100_000_00
+            ledger = ledger(-100_000_00)
         )
         val adj = plan.balanceAdjustment!!
         assertEquals(TransactionType.EXPENSE, adj.type)
@@ -270,10 +277,177 @@ class StatementReconcilerTest {
         val plan = StatementReconciler.reconcile(
             tc, emptyList(), emptyList(), emptyList(), financialCat,
             statementBalanceMinor = -90_000_00,
-            computedBalanceMinor = -100_000_00
+            ledger = ledger(-100_000_00)
         )
         val adj = plan.balanceAdjustment!!
         assertEquals(TransactionType.INCOME, adj.type)
         assertEquals(10_000_00, adj.amountMinor)
+    }
+
+    // --- Regresiones con datos reales (sintetizados) ------------------
+
+    @Test
+    fun `dedup tolera centavos perdidos al editar en pesos enteros`() {
+        // Intereses del extracto 45.678,42; en la app quedaron 45.678,00
+        // porque el inbox/formulario trabajan en pesos enteros.
+        val existing = listOf(confirmedTx(10L, date = 15 * day, amount = 45_678_00))
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 15 * day, amount = 45_678_42, desc = "INTERESES CORRIENTES", charge = true)),
+            existing, emptyList(), financialCat, null, null
+        )
+        assertEquals(1, plan.duplicateCount)
+    }
+
+    @Test
+    fun `una compra no es duplicado de un abono del mismo valor`() {
+        val abono = Transaction(
+            id = 10L, accountId = bank, counterAccountId = tc, type = TransactionType.TRANSFER,
+            amountMinor = 50_000_00, dateMillis = 5 * day,
+            source = TransactionSource.SMS, status = TransactionStatus.CONFIRMED
+        )
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 5 * day, amount = 50_000_00, desc = "EXITO")),
+            listOf(abono), emptyList(), financialCat, null, null
+        )
+        assertEquals(0, plan.duplicateCount)
+        assertEquals(1, plan.newTransactions.size)
+    }
+
+    @Test
+    fun `linea ya importada se reconoce por su huella aunque se edite el monto`() {
+        val lines = listOf(line(date = 5 * day, amount = 12_345_67, desc = "CARGO RARO"))
+        val first = StatementReconciler.reconcile(tc, lines, emptyList(), emptyList(), financialCat, null, null)
+        val edited = first.newTransactions.single().copy(id = 50L, amountMinor = 20_000_00)
+        val again = StatementReconciler.reconcile(tc, lines, listOf(edited), emptyList(), financialCat, null, null)
+        assertEquals(50L, (again.outcomes.single() as LineOutcome.Duplicate).matchedTransactionId)
+    }
+
+    @Test
+    fun `reimportar con movimientos aun PENDING en el inbox no infla el ajuste`() {
+        // Deuda previa conciliada -100k. El extracto trae una compra de 50k
+        // que la importación anterior dejó PENDING → el saldo cuadra.
+        val previa = confirmedTx(1L, date = 1 * day, amount = 100_000_00)
+            .copy(reconciled = true, source = TransactionSource.STATEMENT)
+        val pendiente = confirmedTx(2L, date = 10 * day, amount = 50_000_00)
+            .copy(status = TransactionStatus.PENDING, source = TransactionSource.STATEMENT)
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 10 * day, amount = 50_000_00, desc = "MERCADO PAGO")),
+            listOf(pendiente), emptyList(), financialCat,
+            statementBalanceMinor = -150_000_00,
+            ledger = ledger(0L, listOf(previa, pendiente))
+        )
+        assertNull(plan.balanceAdjustment)
+    }
+
+    @Test
+    fun `movimientos que ningun extracto confirma no generan ajuste`() {
+        // Pago a la parte en DÓLARES de la tarjeta (el "Pago total" en pesos
+        // no lo incluye) y una compra del día de corte que el banco factura
+        // el próximo mes: ninguno aparece en este extracto → fuera del ajuste.
+        val previa = confirmedTx(1L, date = 1 * day, amount = 100_000_00)
+            .copy(reconciled = true, source = TransactionSource.STATEMENT)
+        val pagoUsd = Transaction(
+            id = 2L, accountId = bank, counterAccountId = tc, type = TransactionType.TRANSFER,
+            amountMinor = 50_000_00, dateMillis = 4 * day,
+            source = TransactionSource.SMS, status = TransactionStatus.CONFIRMED
+        )
+        val delCorte = confirmedTx(3L, date = 14 * day, amount = 80_000_00)
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 2 * day, amount = 20_000_00, desc = "RESTAURANTE DEMO")),
+            emptyList(), emptyList(), financialCat,
+            statementBalanceMinor = -120_000_00,
+            ledger = ledger(0L, listOf(previa, pagoUsd, delCorte))
+        )
+        assertNull(plan.balanceAdjustment)
+        assertEquals(setOf(2L, 3L), plan.unreconciledTransactions.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `diferencia de redondeo menor a 100 pesos no genera ajuste`() {
+        val plan = StatementReconciler.reconcile(
+            tc, emptyList(), emptyList(), emptyList(), financialCat,
+            statementBalanceMinor = -100_004_00, ledger = ledger(-100_000_00)
+        )
+        assertNull(plan.balanceAdjustment)
+    }
+
+    @Test
+    fun `compra del corte anterior cuenta cuando el siguiente extracto la confirma`() {
+        val previa = confirmedTx(1L, date = 1 * day, amount = 100_000_00)
+            .copy(reconciled = true, source = TransactionSource.STATEMENT)
+        val delCorte = confirmedTx(3L, date = 14 * day, amount = 80_000_00)
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 14 * day, amount = 80_000_00, desc = "TIENDA DEMO")),
+            listOf(delCorte), emptyList(), financialCat,
+            statementBalanceMinor = -180_000_00,
+            ledger = ledger(0L, listOf(previa, delCorte), cutoff = 45 * day)
+        )
+        assertEquals(1, plan.duplicateCount)
+        assertNull(plan.balanceAdjustment)
+        assertTrue(plan.unreconciledTransactions.isEmpty())
+    }
+
+    @Test
+    fun `movimiento ya conciliado sin linea en este extracto si cuenta`() {
+        val previa = confirmedTx(1L, date = 1 * day, amount = 100_000_00)
+            .copy(reconciled = true, source = TransactionSource.STATEMENT)
+        val plan = StatementReconciler.reconcile(
+            tc, emptyList(), emptyList(), emptyList(), financialCat,
+            statementBalanceMinor = -90_000_00,
+            ledger = ledger(0L, listOf(previa))
+        )
+        assertEquals(TransactionType.INCOME, plan.balanceAdjustment!!.type)
+        assertEquals(10_000_00, plan.balanceAdjustment!!.amountMinor)
+    }
+
+    @Test
+    fun `primera importacion da por facturado lo anterior a los movimientos nuevos`() {
+        // Sin extractos previos: la compra vieja ya está en el saldo anterior
+        val vieja = confirmedTx(1L, date = 1 * day, amount = 100_000_00)
+        val plan = StatementReconciler.reconcile(
+            tc, listOf(line(date = 20 * day, amount = 50_000_00, desc = "X")),
+            emptyList(), emptyList(), financialCat,
+            statementBalanceMinor = -150_000_00,
+            ledger = ledger(0L, listOf(vieja))
+        )
+        assertNull(plan.balanceAdjustment)
+    }
+
+    @Test
+    fun `el ajuste tiene huella estable por extracto`() {
+        fun adj() = StatementReconciler.reconcile(
+            tc, emptyList(), emptyList(), emptyList(), financialCat,
+            statementBalanceMinor = -90_000_00, ledger = ledger(-100_000_00)
+        ).balanceAdjustment!!.externalRef
+        assertEquals(adj(), adj())
+        assertEquals(StatementReconciler.adjustmentRef(tc, 100 * day), adj())
+    }
+
+    @Test
+    fun `cuota de agregador no se factura en el plan de otra compra`() {
+        // Dos compras MERCADO PAGO a 3 cuotas. El plan de 300.000 está
+        // cerrado (dañado); la línea 2/3 de 300.000 NO debe facturarse en
+        // el plan de 90.000 solo por coincidir comercio y nº de cuotas.
+        val otro = DeferredPurchase(25L, tc, "MERCADO PAGO", 60 * day, 90_000_00, 3, 1)
+        val plan = StatementReconciler.reconcile(
+            tc,
+            listOf(line(date = 16 * day, amount = 300_000_00, desc = "MERCADO PAGO",
+                instCurrent = 2, instTotal = 3)),
+            emptyList(), listOf(otro), financialCat, null, null
+        )
+        assertEquals(0, plan.updatedCount)
+    }
+
+    @Test
+    fun `cuota se empareja por monto total y fecha de compra`() {
+        val a = DeferredPurchase(7L, tc, "Regalo", 16 * day, 300_000_00, 3, 1)
+        val b = DeferredPurchase(8L, tc, "Otro regalo", 60 * day, 300_000_00, 3, 1)
+        val plan = StatementReconciler.reconcile(
+            tc,
+            listOf(line(date = 60 * day, amount = 300_000_00, desc = "MERCADO PAGO",
+                instCurrent = 2, instTotal = 3)),
+            emptyList(), listOf(a, b), financialCat, null, null
+        )
+        assertEquals(8L, plan.installmentUpdates.single().deferredPurchaseId)
     }
 }

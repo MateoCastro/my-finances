@@ -7,6 +7,7 @@ import co.purrito.myfinances.data.model.TransactionStatus
 import co.purrito.myfinances.data.model.TransactionType
 import java.security.MessageDigest
 import kotlin.math.abs
+import kotlin.math.sign
 
 /* =====================================================================
  * Reconciliación de extractos (Hito 4) — NÚCLEO PURO.
@@ -39,6 +40,18 @@ data class ParsedStatementLine(
      * defecto). Determina la dirección al persistir y el efecto en saldo.
      */
     val cardIsOrigin: Boolean = false
+)
+
+/**
+ * Estado de la tarjeta en la app para verificar el saldo del extracto.
+ * @param transactions  TODAS las transacciones de la tarjeta (origen o
+ *                      destino), cualquier status
+ * @param cutoffMillis  fin del día de corte del extracto
+ */
+data class CardLedger(
+    val initialBalanceMinor: Long,
+    val transactions: List<Transaction>,
+    val cutoffMillis: Long
 )
 
 /** Qué se decidió para cada línea del extracto. */
@@ -74,7 +87,15 @@ sealed interface LineOutcome {
 data class StatementImportPlan(
     val outcomes: List<LineOutcome>,
     /** Ajuste PENDING si el saldo del extracto difiere del proyectado. */
-    val balanceAdjustment: Transaction?
+    val balanceAdjustment: Transaction?,
+    /**
+     * Movimientos de la app en la tarjeta, dentro del periodo del extracto,
+     * que NINGÚN extracto ha confirmado: compras que el banco factura en el
+     * próximo corte, movimientos en dólares (otra sección del extracto) o
+     * errores. Se EXCLUYEN de la verificación de saldo (también los más
+     * viejos; estos se listan solo para informar lo del periodo).
+     */
+    val unreconciledTransactions: List<Transaction> = emptyList()
 ) {
     val newTransactions: List<Transaction>
         get() = outcomes.filterIsInstance<LineOutcome.New>().map { it.transaction }
@@ -93,8 +114,25 @@ object StatementReconciler {
 
     private const val ONE_DAY_MILLIS = 24L * 60 * 60 * 1000
 
-    /** Por debajo de esto no vale la pena un ajuste de saldo (1 peso). */
-    private const val MIN_ADJUSTMENT_MINOR = 100L
+    /**
+     * Por debajo de esto no vale la pena un ajuste de saldo ($100): es el
+     * redondeo de centavos (el "Pago total" viene en pesos enteros y las
+     * cuotas traen centavos), no un desfase real.
+     */
+    private const val MIN_ADJUSTMENT_MINOR = 100_00L
+
+    /**
+     * Tolerancia de monto para considerar que una transacción de la app y
+     * una línea del extracto son la misma: menos de 1 peso. El formulario
+     * y el inbox trabajan en pesos enteros, así que un movimiento editado
+     * a mano pierde los centavos del extracto (intereses 45.678,42 →
+     * 45.678). Con match exacto, al reimportar, esa línea volvía a entrar
+     * como "nueva" y descuadraba el ajuste de saldo.
+     */
+    private const val AMOUNT_TOLERANCE_MINOR = 100L
+
+    /** Ventana para emparejar una cuota con la fecha de compra de su plan. */
+    private const val PURCHASE_DATE_TOLERANCE_MILLIS = 3 * ONE_DAY_MILLIS
 
     /**
      * @param accountId         la cuenta (TC) del extracto
@@ -105,7 +143,8 @@ object StatementReconciler {
      * @param financialCategoryId  id de "Costos financieros" (cargos del banco)
      * @param statementBalanceMinor saldo (deuda, negativo) que reporta el
      *                          extracto; null si el parser no lo extrajo
-     * @param computedBalanceMinor  deuda actual calculada en la app (CONFIRMED)
+     * @param ledger            la tarjeta en la app, para verificar el
+     *                          saldo; null = no verificar (sin ajuste)
      */
     fun reconcile(
         accountId: Long,
@@ -114,7 +153,7 @@ object StatementReconciler {
         openDeferred: List<DeferredPurchase>,
         financialCategoryId: Long?,
         statementBalanceMinor: Long?,
-        computedBalanceMinor: Long,
+        ledger: CardLedger?,
         dayToleranceMillis: Long = ONE_DAY_MILLIS
     ): StatementImportPlan {
         val consumedTx = mutableSetOf<Long>()        // existentes ya matcheadas
@@ -137,12 +176,25 @@ object StatementReconciler {
                 )
             }
 
-            // 2) ¿Ya existe? (mismo monto, fecha ±1 día, no consumida aún)
-            val dup = existing.firstOrNull { t ->
-                t.id !in consumedTx &&
-                    t.amountMinor == line.amountMinor &&
-                    abs(t.dateMillis - line.dateMillis) <= dayToleranceMillis
-            }
+            // 2) ¿Ya existe? Primero la misma línea de una importación
+            //    anterior (misma huella, aunque el usuario haya editado el
+            //    monto); si no, mismo monto (±1 peso), fecha ±1 día y mismo
+            //    sentido sobre la deuda (una compra no "es" un abono del
+            //    mismo valor). Si hay varias, la más parecida.
+            val ref = statementRef(accountId, line, index)
+            val lineEffect = balanceEffect(line)
+            val dup = existing.firstOrNull { it.id !in consumedTx && it.externalRef == ref }
+                ?: existing
+                .filter { t ->
+                    t.id !in consumedTx &&
+                        abs(t.amountMinor - line.amountMinor) < AMOUNT_TOLERANCE_MINOR &&
+                        abs(t.dateMillis - line.dateMillis) <= dayToleranceMillis &&
+                        effectOn(t, accountId).sign == lineEffect.sign
+                }
+                .minWithOrNull(
+                    compareBy<Transaction> { abs(it.amountMinor - line.amountMinor) }
+                        .thenBy { abs(it.dateMillis - line.dateMillis) }
+                )
             if (dup != null) {
                 consumedTx += dup.id
                 return@mapIndexed LineOutcome.Duplicate(line, dup.id)
@@ -161,35 +213,123 @@ object StatementReconciler {
                     merchantRaw = line.rawDescription,
                     source = TransactionSource.STATEMENT,
                     status = TransactionStatus.PENDING,
-                    externalRef = statementRef(accountId, line, index)
+                    externalRef = ref,
+                    reconciled = true
                 )
             )
         }
 
-        val adjustment = buildBalanceAdjustment(
-            accountId, outcomes, financialCategoryId,
-            statementBalanceMinor, computedBalanceMinor
-        )
+        if (statementBalanceMinor == null || ledger == null) {
+            return StatementImportPlan(outcomes, balanceAdjustment = null)
+        }
 
-        return StatementImportPlan(outcomes, adjustment)
+        val check = checkBalance(accountId, lines, outcomes, ledger, statementBalanceMinor)
+        val adjustment = check.differenceMinor
+            .takeIf { abs(it) >= MIN_ADJUSTMENT_MINOR }
+            ?.let { diff ->
+                // diff < 0 → falta deuda → EXPENSE; diff > 0 → sobra deuda → INCOME
+                Transaction(
+                    accountId = accountId,
+                    type = if (diff < 0) TransactionType.EXPENSE else TransactionType.INCOME,
+                    amountMinor = abs(diff),
+                    categoryId = financialCategoryId,
+                    // fechado como la última línea del extracto (el corte)
+                    dateMillis = lines.maxOfOrNull { it.dateMillis } ?: ledger.cutoffMillis,
+                    merchantRaw = null,
+                    source = TransactionSource.STATEMENT,
+                    status = TransactionStatus.PENDING,
+                    // Una huella por extracto (cuenta + corte): al reimportar
+                    // el mismo extracto se REEMPLAZA el ajuste pendiente en
+                    // vez de sumar otro.
+                    externalRef = adjustmentRef(accountId, ledger.cutoffMillis),
+                    reconciled = true
+                )
+            }
+
+        return StatementImportPlan(outcomes, adjustment, check.excluded)
+    }
+
+    /** Huella del ajuste de saldo de un extracto (ver [reconcile]). */
+    fun adjustmentRef(accountId: Long, cutoffMillis: Long): String =
+        sha256("adjustment|$accountId|$cutoffMillis")
+
+    private class BalanceCheck(val differenceMinor: Long, val excluded: List<Transaction>)
+
+    /**
+     * El extracto es la verdad: tras importar y confirmar todo, la deuda de
+     * la app debe igualar el saldo del extracto. Se compara SOLO contra lo
+     * que el banco ya conoce:
+     *
+     *  - movimientos de la app que ESTE extracto confirma (duplicados,
+     *    aunque sigan PENDING en el inbox, y la compra original de cada
+     *    cuota facturada),
+     *  - los que un extracto anterior ya confirmó (`reconciled`) o que
+     *    nacieron de uno (source STATEMENT: intereses, ajustes...),
+     *  - las líneas nuevas (se asume que el usuario las confirmará).
+     *
+     * Lo demás —compras que el banco factura en el próximo corte, compras
+     * y pagos en DÓLARES (el "Pago total" en pesos no los incluye) o
+     * errores— queda FUERA. Antes entraba al cálculo y producía ajustes
+     * considerables cada mes que después no se revertían.
+     */
+    private fun checkBalance(
+        accountId: Long,
+        lines: List<ParsedStatementLine>,
+        outcomes: List<LineOutcome>,
+        ledger: CardLedger,
+        statementBalanceMinor: Long
+    ): BalanceCheck {
+        val matchedIds = outcomes.filterIsInstance<LineOutcome.Duplicate>()
+            .map { it.matchedTransactionId }.toSet()
+        val billedPlans = outcomes.filterIsInstance<LineOutcome.InstallmentBilled>()
+            .map { it.deferredPurchaseId }.toSet()
+
+        // Primera importación de esta tarjeta: nada está marcado aún, así
+        // que lo anterior a los movimientos nuevos del extracto se da por
+        // facturado en extractos previos (está en el "saldo anterior").
+        val firstImport = ledger.transactions.none { it.source == TransactionSource.STATEMENT }
+        val newMovementsFrom = lines
+            .filter { (it.installmentCurrent ?: 1) <= 1 }
+            .minOfOrNull { it.dateMillis } ?: Long.MIN_VALUE
+
+        val counted = mutableListOf<Transaction>()
+        val excluded = mutableListOf<Transaction>()
+        for (t in ledger.transactions) {
+            val confirmedByThisStatement = t.id in matchedIds ||
+                (t.deferredPurchaseId != null && t.deferredPurchaseId in billedPlans)
+            when {
+                confirmedByThisStatement -> counted += t
+                t.status != TransactionStatus.CONFIRMED -> Unit  // inbox: aún no cuenta
+                t.dateMillis > ledger.cutoffMillis -> Unit        // posterior al corte
+                t.reconciled || t.source == TransactionSource.STATEMENT -> counted += t
+                firstImport && t.dateMillis < newMovementsFrom -> counted += t
+                else -> excluded += t
+            }
+        }
+
+        val projected = ledger.initialBalanceMinor +
+            counted.sumOf { effectOn(it, accountId) } +
+            outcomes.filterIsInstance<LineOutcome.New>().sumOf { balanceEffect(it.line) }
+        return BalanceCheck(
+            statementBalanceMinor - projected,
+            excluded.filter { it.dateMillis >= newMovementsFrom }
+        )
     }
 
     /**
      * Empareja una línea "CUOTA x/y" con una compra diferida abierta.
      *
-     * Criterio (de más a menos fuerte):
-     *  1) La línea debe AVANZAR el plan: su cuota actual va más allá de lo
-     *     ya facturado (`current > billedInstallments`). Esto impide que una
-     *     compra NUEVA "1/6" sea absorbida por un plan viejo del mismo nº de
-     *     cuotas que ya facturó alguna (antes `singleOrNull` la tragaba solo
-     *     por coincidir el total → la compra nueva no entraba al inbox).
-     *  2) Mismo capital total: el "valor movimiento" del extracto es el
-     *     total de la compra; si iguala `totalAmountMinor` del plan, es la
-     *     misma compra (señal única aunque el comercio se repita).
-     *  3) Correspondencia de comercio (substring en cualquier dirección).
-     *  4) Continuación (no primera cuota) con un único candidato que avanza:
-     *     se confía aunque el texto del extracto no matchee el comercio.
-     * Si nada aplica, devuelve null y la línea sigue el flujo normal (nueva).
+     * Las cuotas traen la FECHA y el MONTO TOTAL de la compra original
+     * (Bancolombia y Davivienda), así que esa es la señal fuerte:
+     *  0) La línea debe AVANZAR el plan (`current > billedInstallments`):
+     *     una compra NUEVA "1/6" no la absorbe un plan viejo de 6 cuotas.
+     *  1) Mismo capital total (±1 peso) y fecha de compra cercana.
+     *  2) Mismo capital total (el plan pudo nacer con otra fecha).
+     *  3) Mismo comercio Y fecha de compra cercana.
+     * Ya NO se acepta un plan solo por comercio o por ser el único
+     * candidato: en agregadores ("MERCADO PAGO") eso facturaba la cuota en
+     * el plan de OTRA compra (ej. la 2/3 de una compra de 300.000 en el
+     * plan de una de 90.000). Si nada aplica, sigue el flujo normal.
      */
     private fun matchInstallment(
         line: ParsedStatementLine,
@@ -204,52 +344,18 @@ object StatementReconciler {
                 current > it.billedInstallments
         }
         if (candidates.isEmpty()) return null
-        candidates.firstOrNull { it.totalAmountMinor == line.amountMinor }?.let { return it }
-        candidates.firstOrNull { p ->
+
+        fun sameAmount(p: DeferredPurchase) =
+            abs(p.totalAmountMinor - line.amountMinor) < AMOUNT_TOLERANCE_MINOR
+        fun nearDate(p: DeferredPurchase) =
+            abs(p.purchaseDateMillis - line.dateMillis) <= PURCHASE_DATE_TOLERANCE_MILLIS
+        fun sameMerchant(p: DeferredPurchase) =
             line.rawDescription.contains(p.merchant, ignoreCase = true) ||
                 p.merchant.contains(line.rawDescription, ignoreCase = true)
-        }?.let { return it }
-        return if (current > 1) candidates.singleOrNull() else null
-    }
 
-    /**
-     * El extracto es la verdad: tras importar y confirmar todo, la deuda
-     * de la app debe igualar el saldo del extracto. Proyecta la deuda
-     * actual + el efecto de las líneas NUEVAS y, si aún difiere del
-     * extracto, crea un ajuste PENDING (Costos financieros) por la
-     * diferencia. Las cuotas y duplicados ya están en la deuda calculada.
-     */
-    private fun buildBalanceAdjustment(
-        accountId: Long,
-        outcomes: List<LineOutcome>,
-        financialCategoryId: Long?,
-        statementBalanceMinor: Long?,
-        computedBalanceMinor: Long
-    ): Transaction? {
-        if (statementBalanceMinor == null) return null
-
-        val newEffect = outcomes.filterIsInstance<LineOutcome.New>().sumOf { balanceEffect(it.line) }
-        val projected = computedBalanceMinor + newEffect
-        val diff = statementBalanceMinor - projected
-        if (abs(diff) < MIN_ADJUSTMENT_MINOR) return null
-
-        // diff < 0 → falta deuda → EXPENSE; diff > 0 → sobra deuda → INCOME
-        val (type, amount) = if (diff < 0) {
-            TransactionType.EXPENSE to -diff
-        } else {
-            TransactionType.INCOME to diff
-        }
-        return Transaction(
-            accountId = accountId,
-            type = type,
-            amountMinor = amount,
-            categoryId = financialCategoryId,
-            dateMillis = statementAdjustmentDate(outcomes),
-            merchantRaw = null,
-            source = TransactionSource.STATEMENT,
-            status = TransactionStatus.PENDING,
-            externalRef = null
-        )
+        return candidates.firstOrNull { sameAmount(it) && nearDate(it) }
+            ?: candidates.firstOrNull { sameAmount(it) }
+            ?: candidates.firstOrNull { sameMerchant(it) && nearDate(it) }
     }
 
     /** Efecto de una línea sobre la deuda de la TC (positivo = menos deuda). */
@@ -261,9 +367,16 @@ object StatementReconciler {
             if (line.cardIsOrigin) -line.amountMinor else line.amountMinor
     }
 
-    /** El ajuste se fecha como la última línea del extracto (o 0 si vacío). */
-    private fun statementAdjustmentDate(outcomes: List<LineOutcome>): Long =
-        outcomes.maxOfOrNull { it.line.dateMillis } ?: 0L
+    /** Efecto de una transacción de la app sobre el saldo de la tarjeta. */
+    private fun effectOn(t: Transaction, cardId: Long): Long = when (t.type) {
+        TransactionType.INCOME -> if (t.accountId == cardId) t.amountMinor else 0
+        TransactionType.EXPENSE -> if (t.accountId == cardId) -t.amountMinor else 0
+        TransactionType.TRANSFER -> when (cardId) {
+            t.accountId -> -t.amountMinor
+            t.counterAccountId -> t.amountMinor
+            else -> 0
+        }
+    }
 
     /** Huella de deduplicación del extracto: incluye el nº de línea. */
     private fun statementRef(accountId: Long, line: ParsedStatementLine, index: Int): String =
