@@ -65,6 +65,8 @@ import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Plus
 import com.composables.icons.lucide.Trash2
+import androidx.compose.runtime.ReadOnlyComposable
+import co.purrito.myfinances.ui.theme.AppTheme
 
 /* =====================================================================
  * Plantillas SMS (Hito 7): las reglas con que la app reconoce los SMS
@@ -198,7 +200,13 @@ private fun TemplateCard(
                 Switch(
                     checked = template.enabled,
                     onCheckedChange = onToggle,
-                    colors = SwitchDefaults.colors(checkedTrackColor = AccentPink),
+                    colors = SwitchDefaults.colors(
+                        checkedTrackColor = AccentPink,
+                        checkedThumbColor = Color.White,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
                     modifier = Modifier.scale(0.8f)
                 )
             }
@@ -364,4 +372,6 @@ internal fun MissedSmsList(
 }
 
 /** Ámbar de "atención" (mismo tono que el badge del inbox). */
-internal val WarningAmber = Color(0xFFF59E0B)
+internal val WarningAmber: Color
+    @Composable @ReadOnlyComposable
+    get() = if (AppTheme.isLight) AppTheme.warningText else AppTheme.warning

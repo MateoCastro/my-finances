@@ -56,6 +56,8 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MessageSquare
 import com.composables.icons.lucide.Tag
 import java.util.Locale
+import androidx.compose.runtime.ReadOnlyComposable
+import co.purrito.myfinances.ui.theme.AppTheme
 
 /* =====================================================================
  * Tab "Más" — entradas: Categorías (abre el modal) e Idioma (es/en).
@@ -67,8 +69,8 @@ import java.util.Locale
  * manifest para API < 33; localeConfig para 33+).
  * ===================================================================== */
 
-private val entryIconTint = Color(0xFF7FB1F2)
-private val entryIconBg = Color(0xFF1C2C45)
+private val entryIconTint: Color @Composable @ReadOnlyComposable get() = AppTheme.entryIconTint
+private val entryIconBg: Color @Composable @ReadOnlyComposable get() = AppTheme.entryIconBg
 
 // Formatos de extracto aceptados: .xlsx (Bancolombia) y .txt (Davivienda).
 // Algunos proveedores reportan el xlsx como octet-stream.

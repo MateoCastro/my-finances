@@ -18,7 +18,7 @@ co.purrito.myfinances/
 ├── ui/
 │   ├── Format.kt             ← formatCop(), formatDate(), formatMonth() compartidos
 │   ├── AppNavigation.kt      ← Bottom nav (Trans./Stats/Cuentas) + rutas de detalle
-│   ├── theme/                ← Paleta oscura suave + tipografía compacta (estilo MM)
+│   ├── theme/                ← Paletas oscura (diseño de referencia) y clara vía AppColors/LocalAppColors + tipografía compacta
 │   ├── transactions/         ← Pantalla principal: registro mensual por días
 │   ├── stats/                ← Dona de composición por categoría (Canvas puro)
 │   ├── accounts/             ← Lista de cuentas con saldos calculados

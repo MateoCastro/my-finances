@@ -61,6 +61,7 @@ import co.purrito.myfinances.ui.theme.IncomeGreen
 import co.purrito.myfinances.ui.theme.chipColorsFor
 import java.time.YearMonth
 import kotlin.math.roundToInt
+import androidx.compose.runtime.ReadOnlyComposable
 
 /* =====================================================================
  * Estadísticas — implementación del mock de diseño:
@@ -81,6 +82,8 @@ import kotlin.math.roundToInt
  * categoría si está configurado.
  * ===================================================================== */
 
+@Composable
+@ReadOnlyComposable
 private fun colorsFor(total: CategoryTotal): ChipColors =
     chipColorsFor(total.categoryId, total.colorArgb)
 
