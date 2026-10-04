@@ -30,6 +30,10 @@ private val copFormat: NumberFormat =
 /** 198_500_000 (centavos) -> "$ 1.985.000" */
 fun formatCop(amountMinor: Long): String = copFormat.format(amountMinor / 100.0)
 
+/** 4_257 (centavos de dólar) -> "USD 42,57" (solo informativo: la app es COP). */
+fun formatUsd(amountMinor: Long): String =
+    "USD " + String.format(copLocale, "%,.2f", amountMinor / 100.0)
+
 /**
  * Versión compacta para espacios reducidos (centro de la dona):
  * 130_811_000_00 (centavos) -> "$1,3M" · 50_000_000 -> "$500K"

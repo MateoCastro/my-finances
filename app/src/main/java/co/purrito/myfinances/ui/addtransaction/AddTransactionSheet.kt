@@ -86,6 +86,7 @@ import co.purrito.myfinances.data.model.Transaction
 import co.purrito.myfinances.data.model.TransactionType
 import co.purrito.myfinances.ui.components.DropdownField
 import co.purrito.myfinances.ui.components.PillTabs
+import co.purrito.myfinances.ui.components.ThousandsSeparatorTransformation
 import co.purrito.myfinances.ui.formatCop
 import co.purrito.myfinances.ui.formatDate
 import co.purrito.myfinances.ui.theme.AccentPink
@@ -120,6 +121,9 @@ import java.time.ZoneOffset
  * (registro retroactivo) y el tipo Transferencia (pago de TC).
  * El monto usa el teclado numérico del sistema.
  * ===================================================================== */
+
+/** Tamaño del monto grande (con separador de miles cabe un poco menor). */
+private val AMOUNT_FONT_SIZE = 28.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -318,7 +322,7 @@ fun AddTransactionSheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "$ ",
-                        fontSize = 34.sp,
+                        fontSize = AMOUNT_FONT_SIZE,
                         fontWeight = FontWeight.Bold,
                         color = amountColor
                     )
@@ -328,12 +332,14 @@ fun AddTransactionSheet(
                             amountText = input.filter { it.isDigit() }.take(12)
                         },
                         textStyle = MaterialTheme.typography.headlineSmall.copy(
-                            fontSize = 34.sp,
+                            fontSize = AMOUNT_FONT_SIZE,
                             fontWeight = FontWeight.Bold,
                             color = amountColor,
                             textAlign = TextAlign.Start
                         ),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        // "1250000" se ve como "1.250.000"; el estado sigue en dígitos
+                        visualTransformation = ThousandsSeparatorTransformation,
                         singleLine = true,
                         cursorBrush = SolidColor(amountColor),
                         modifier = Modifier.focusRequester(amountFocus),
@@ -342,7 +348,7 @@ fun AddTransactionSheet(
                                 if (amountText.isEmpty()) {
                                     Text(
                                         "0",
-                                        fontSize = 34.sp,
+                                        fontSize = AMOUNT_FONT_SIZE,
                                         fontWeight = FontWeight.Bold,
                                         color = amountColor.copy(alpha = 0.5f)
                                     )

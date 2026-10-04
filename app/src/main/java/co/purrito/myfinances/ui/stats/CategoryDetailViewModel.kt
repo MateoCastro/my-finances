@@ -1,4 +1,4 @@
-package co.purrito.myfinances.ui.accountdetail
+package co.purrito.myfinances.ui.stats
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -8,55 +8,40 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import co.purrito.myfinances.data.AppDatabase
 import co.purrito.myfinances.data.dao.TransactionWithLabels
-import co.purrito.myfinances.data.model.Account
-import co.purrito.myfinances.data.dao.DeferredPurchaseWithAnchor
-import co.purrito.myfinances.data.model.Transaction
-import kotlinx.coroutines.launch
+import co.purrito.myfinances.data.model.Category
+import co.purrito.myfinances.data.model.TransactionType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import java.time.YearMonth
 import java.time.ZoneId
 
 /* =====================================================================
- * ViewModel del detalle de cuenta: la cuenta + sus movimientos del
- * mes seleccionado (mismo patrón de mes navegable que el registro).
+ * Detalle de una categoría desde Estadísticas: los movimientos de esa
+ * categoría (y tipo) en el mes, agrupados por día. Arranca en el mes
+ * que estaba viendo Stats y se puede navegar de mes aquí mismo.
  *
- * Necesita un PARÁMETRO (accountId) además del Application, así que
- * Compose no puede crearlo solo — hay que darle una "factory".
+ * categoryId null = "Sin categoría".
  * ===================================================================== */
 
-class AccountDetailViewModel(
+class CategoryDetailViewModel(
     app: Application,
-    accountId: Long
+    private val categoryId: Long?,
+    private val type: TransactionType,
+    initialMonth: YearMonth
 ) : AndroidViewModel(app) {
 
     private val db = AppDatabase.get(app)
 
-    /** La cuenta misma (header con nombre, tipo y saldo). */
-    val account: StateFlow<Account?> =
-        db.accountDao().observeById(accountId)
+    val category: StateFlow<Category?> =
+        (if (categoryId != null) db.categoryDao().observeById(categoryId) else flowOf(null))
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Compras diferidas abiertas (solo relevante si la cuenta es TC). */
-    val deferredPurchases: StateFlow<List<DeferredPurchaseWithAnchor>> =
-        db.deferredPurchaseDao().observeOpenWithAnchorByCard(accountId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    /**
-     * Tocar un diferido abre su transacción ancla en el formulario de
-     * edición (ahí se cambia nombre, categoría, etc.).
-     */
-    fun openAnchor(transactionId: Long, onLoaded: (Transaction) -> Unit) {
-        viewModelScope.launch {
-            db.transactionDao().getById(transactionId)?.let(onLoaded)
-        }
-    }
-
-    private val _month = MutableStateFlow(YearMonth.now())
+    private val _month = MutableStateFlow(initialMonth)
     val month: StateFlow<YearMonth> = _month
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -65,7 +50,7 @@ class AccountDetailViewModel(
             val zone = ZoneId.systemDefault()
             val from = month.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
             val to = month.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-            db.transactionDao().observeByAccountRangeWithLabels(accountId, from, to)
+            db.transactionDao().observeByCategoryRangeWithLabels(type.name, categoryId, from, to)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun previousMonth() {
@@ -77,12 +62,10 @@ class AccountDetailViewModel(
     }
 
     companion object {
-        /** Factory: "para crear este ViewModel, toma el Application del
-         *  sistema y el accountId que te paso desde la pantalla". */
-        fun factory(accountId: Long) = viewModelFactory {
+        fun factory(categoryId: Long?, type: TransactionType, month: YearMonth) = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as Application
-                AccountDetailViewModel(app, accountId)
+                CategoryDetailViewModel(app, categoryId, type, month)
             }
         }
     }

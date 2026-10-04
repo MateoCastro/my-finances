@@ -106,30 +106,6 @@ interface AccountDao {
     suspend fun balanceOf(id: Long): Long?
 
     /**
-     * Saldo calculado considerando SOLO transacciones hasta `toMillis`
-     * (inclusive). Para reconciliar un extracto contra la deuda a su
-     * fecha de CORTE, sin que los movimientos posteriores (ej: un pago
-     * hecho después del corte) sesguen el ajuste de saldo.
-     */
-    @Query(
-        """
-        SELECT a.initialBalanceMinor
-             + COALESCE((SELECT SUM(CASE
-                    WHEN t.type = 'INCOME'  AND t.accountId = a.id THEN  t.amountMinor
-                    WHEN t.type = 'EXPENSE' AND t.accountId = a.id THEN -t.amountMinor
-                    WHEN t.type = 'TRANSFER' AND t.accountId = a.id THEN -t.amountMinor
-                    WHEN t.type = 'TRANSFER' AND t.counterAccountId = a.id THEN t.amountMinor
-                    ELSE 0 END)
-                 FROM transactions t
-                 WHERE (t.accountId = a.id OR t.counterAccountId = a.id)
-                   AND t.status = 'CONFIRMED'
-                   AND t.dateMillis <= :toMillis), 0)
-        FROM accounts a WHERE a.id = :id
-        """
-    )
-    suspend fun balanceOfUpTo(id: Long, toMillis: Long): Long?
-
-    /**
      * Soft-delete (mismo criterio que las categorías): "eliminar" una
      * cuenta la archiva. Las transacciones históricas la conservan vía
      * JOIN; solo deja de ofrecerse y de listarse. Un DELETE real
@@ -159,6 +135,10 @@ interface CategoryDao {
      */
     @Query("SELECT * FROM categories WHERE name = :name AND archived = 0 LIMIT 1")
     suspend fun findByName(name: String): Category?
+
+    /** Incluye archivadas: el detalle de Stats muestra también las históricas. */
+    @Query("SELECT * FROM categories WHERE id = :id")
+    fun observeById(id: Long): Flow<Category?>
 
     /**
      * Soft-delete (comportamiento Money Manager): las transacciones
@@ -256,6 +236,35 @@ interface TransactionDao {
         toMillis: Long
     ): Flow<List<TransactionWithLabels>>
 
+    /**
+     * Movimientos CONFIRMED de UNA categoría y tipo en un rango: el detalle
+     * al tocar una categoría en Estadísticas. Mismos filtros que
+     * observeTotalsByCategory para que la suma cuadre con la fila tocada.
+     * `IS` (no `=`) para que categoryId null traiga las "Sin categoría".
+     */
+    @Query(
+        """
+        SELECT t.*, c.name AS categoryName, c.colorArgb AS categoryColorArgb,
+               a.name AS accountName,
+               ca.name AS counterAccountName
+        FROM transactions t
+        LEFT JOIN categories c ON c.id = t.categoryId
+        LEFT JOIN accounts a ON a.id = t.accountId
+        LEFT JOIN accounts ca ON ca.id = t.counterAccountId
+        WHERE t.status = 'CONFIRMED'
+          AND t.type = :type
+          AND t.categoryId IS :categoryId
+          AND t.dateMillis BETWEEN :fromMillis AND :toMillis
+        ORDER BY t.dateMillis DESC
+        """
+    )
+    fun observeByCategoryRangeWithLabels(
+        type: String,
+        categoryId: Long?,
+        fromMillis: Long,
+        toMillis: Long
+    ): Flow<List<TransactionWithLabels>>
+
     /** El inbox: todo lo capturado automáticamente que espera tu visto bueno. */
     @Query("SELECT * FROM transactions WHERE status = 'PENDING' ORDER BY dateMillis DESC")
     fun observePending(): Flow<List<Transaction>>
@@ -263,6 +272,24 @@ interface TransactionDao {
     /** Deduplicación: ¿ya existe una transacción con esta huella? */
     @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE externalRef = :ref)")
     suspend fun existsByExternalRef(ref: String): Boolean
+
+    @Query("SELECT * FROM transactions WHERE externalRef = :ref LIMIT 1")
+    suspend fun findByExternalRef(ref: String): Transaction?
+
+    /**
+     * Todo el historial de una tarjeta (origen o destino, cualquier
+     * status), para verificar el saldo de un extracto (CardLedger).
+     */
+    @Query("SELECT * FROM transactions WHERE accountId = :cardId OR counterAccountId = :cardId")
+    suspend fun getCardLedger(cardId: Long): List<Transaction>
+
+    /** Marca movimientos como confirmados por un extracto. */
+    @Query("UPDATE transactions SET reconciled = 1 WHERE id IN (:ids)")
+    suspend fun markReconciled(ids: List<Long>)
+
+    /** La compra original de cada cuota facturada también queda conciliada. */
+    @Query("UPDATE transactions SET reconciled = 1 WHERE deferredPurchaseId IN (:planIds)")
+    suspend fun markReconciledByPlans(planIds: List<Long>)
 
     /**
      * Totales por categoría (gastos o ingresos según :type) en un rango.
@@ -349,6 +376,19 @@ interface TransactionDao {
     fun observeDescriptionSuggestions(query: String): Flow<List<String>>
 }
 
+/**
+ * Plan diferido + su transacción ANCLA (la compra/avance original). La UI
+ * muestra el nombre de la transacción — que el usuario edita — en vez de
+ * `merchant`, que es el texto con que nació el plan (puede ser el alias
+ * de OTRA compra del mismo comercio, ej. "MERCADO PAGO").
+ */
+data class DeferredPurchaseWithAnchor(
+    @Embedded val purchase: DeferredPurchase,
+    val anchorTransactionId: Long,
+    val anchorDescription: String?,
+    val anchorMerchantRaw: String?
+)
+
 @Dao
 interface DeferredPurchaseDao {
 
@@ -359,21 +399,24 @@ interface DeferredPurchaseDao {
     suspend fun update(purchase: DeferredPurchase)
 
     /**
-     * Planes diferidos abiertos de una tarjeta. El EXISTS exige que el
-     * plan conserve su transacción ANCLA: al borrar esa transacción (por
-     * cualquier vía) el plan deja de listarse, evitando "huérfanos"
-     * duplicados — el plan es una entidad aparte y no se borra en cascada.
+     * Planes diferidos abiertos de una tarjeta con su transacción ANCLA.
+     * El JOIN exige que el plan conserve su ancla: al borrar esa
+     * transacción (por cualquier vía) el plan deja de listarse, evitando
+     * "huérfanos" — el plan es una entidad aparte y no se borra en
+     * cascada. MIN(t.id): si hubiera dos anclas, una sola fila por plan.
      */
     @Query(
         """
-        SELECT * FROM deferred_purchases dp
+        SELECT dp.*, t.id AS anchorTransactionId,
+               t.description AS anchorDescription, t.merchantRaw AS anchorMerchantRaw
+        FROM deferred_purchases dp
+        JOIN transactions t ON t.id = (
+            SELECT MIN(t2.id) FROM transactions t2 WHERE t2.deferredPurchaseId = dp.id
+        )
         WHERE dp.closed = 0 AND dp.accountId = :cardId
-          AND EXISTS (
-            SELECT 1 FROM transactions t WHERE t.deferredPurchaseId = dp.id
-          )
         """
     )
-    fun observeOpenByCard(cardId: Long): Flow<List<DeferredPurchase>>
+    fun observeOpenWithAnchorByCard(cardId: Long): Flow<List<DeferredPurchaseWithAnchor>>
 
     /**
      * One-shot para reconciliar extractos (Hito 4): abiertos CON

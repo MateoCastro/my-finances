@@ -69,7 +69,10 @@ import co.purrito.myfinances.ui.addtransaction.AddTransactionSheet
 import co.purrito.myfinances.ui.inbox.InboxScreen
 import co.purrito.myfinances.ui.inbox.InboxViewModel
 import co.purrito.myfinances.ui.more.MoreScreen
+import co.purrito.myfinances.ui.stats.CategoryDetailScreen
 import co.purrito.myfinances.ui.stats.StatsScreen
+import co.purrito.myfinances.data.model.TransactionType
+import java.time.YearMonth
 import co.purrito.myfinances.ui.theme.AccentPink
 import co.purrito.myfinances.ui.transactions.TransactionsScreen
 import co.purrito.myfinances.ui.voice.VoiceCaptureSheet
@@ -106,6 +109,13 @@ object Routes {
     const val ACCOUNT_FORM = "account_form?accountId={accountId}"
     fun accountForm(accountId: Long? = null) =
         if (accountId == null) "account_form" else "account_form?accountId=$accountId"
+
+    // Movimientos de una categoría en un mes (desde Stats).
+    // categoryId -1 = "Sin categoría"; month = "yyyy-MM".
+    const val CATEGORY_DETAIL = "category/{type}/{categoryId}/{month}"
+    fun categoryDetail(categoryId: Long?, type: TransactionType, month: YearMonth) =
+        "category/${type.name}/${categoryId ?: NO_CATEGORY}/$month"
+    const val NO_CATEGORY = -1L
 
     const val INBOX = "inbox"
     const val MORE = "more"
@@ -367,7 +377,30 @@ fun AppNavigation(
             }
 
             composable(Routes.STATS) {
-                StatsScreen()
+                StatsScreen(
+                    onCategoryClick = { categoryId, type, month ->
+                        navController.navigate(Routes.categoryDetail(categoryId, type, month))
+                    }
+                )
+            }
+
+            composable(
+                route = Routes.CATEGORY_DETAIL,
+                arguments = listOf(
+                    navArgument("type") { type = NavType.StringType },
+                    navArgument("categoryId") { type = NavType.LongType },
+                    navArgument("month") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val args = entry.arguments ?: return@composable
+                val categoryId = args.getLong("categoryId").takeIf { it != Routes.NO_CATEGORY }
+                CategoryDetailScreen(
+                    categoryId = categoryId,
+                    type = TransactionType.valueOf(args.getString("type") ?: return@composable),
+                    initialMonth = YearMonth.parse(args.getString("month") ?: return@composable),
+                    onBack = { navController.popBackStack() },
+                    onEditTransaction = { editingTransaction = it }
+                )
             }
 
             composable(Routes.ACCOUNTS) {

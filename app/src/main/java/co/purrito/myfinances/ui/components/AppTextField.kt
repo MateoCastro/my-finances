@@ -30,6 +30,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,7 +71,10 @@ fun AppTextField(
         KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
     focusRequester: FocusRequester? = null,
     leading: (@Composable () -> Unit)? = null,
-    trailing: (@Composable () -> Unit)? = null
+    trailing: (@Composable () -> Unit)? = null,
+    // Solo presentación (ej: separador de miles en montos); el valor
+    // del campo no cambia
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
@@ -89,6 +93,7 @@ fun AppTextField(
         modifier = fieldModifier,
         singleLine = singleLine,
         keyboardOptions = keyboardOptions,
+        visualTransformation = visualTransformation,
         interactionSource = interactionSource,
         textStyle = fieldTextStyle(),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),

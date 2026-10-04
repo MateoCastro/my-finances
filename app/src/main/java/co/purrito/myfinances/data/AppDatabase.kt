@@ -8,6 +8,8 @@ import co.purrito.myfinances.R
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import co.purrito.myfinances.data.dao.*
 import co.purrito.myfinances.data.model.*
 import co.purrito.myfinances.service.DefaultSmsTemplates
@@ -34,6 +36,36 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
  * Keystore) al builder.
  * ===================================================================== */
 
+/**
+ * v4 → v5: `transactions.reconciled` (movimiento ya confirmado por un
+ * extracto). Aditiva: no toca datos existentes salvo el backfill.
+ *
+ * Backfill: lo que ya pasó por una importación se da por conciliado —
+ * las líneas nacidas de un extracto (source STATEMENT) y, en cada
+ * tarjeta, los movimientos CONFIRMED hasta la fecha de su último
+ * extracto importado (los ajustes de saldo anteriores ya los cuadraron).
+ * Lo posterior queda en 0 y lo confirma el próximo extracto.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE transactions ADD COLUMN reconciled INTEGER NOT NULL DEFAULT 0")
+        db.execSQL(
+            """
+            UPDATE transactions SET reconciled = 1
+            WHERE source = 'STATEMENT'
+               OR (status = 'CONFIRMED' AND EXISTS (
+                    SELECT 1 FROM accounts a
+                    WHERE a.type = 'CREDIT_CARD'
+                      AND a.id IN (transactions.accountId, transactions.counterAccountId)
+                      AND transactions.dateMillis <= (
+                          SELECT MAX(s.dateMillis) FROM transactions s
+                          WHERE s.source = 'STATEMENT'
+                            AND (s.accountId = a.id OR s.counterAccountId = a.id))))
+            """
+        )
+    }
+}
+
 @Database(
     entities = [
         Account::class,
@@ -43,7 +75,7 @@ import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
         MerchantAlias::class,
         SmsTemplate::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -59,27 +91,32 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        /**
+         * Builder compartido. Expuesto aparte de [get] para poder abrir una
+         * COPIA de la BD (mismo cifrado y migraciones) al verificar una
+         * migración contra datos reales sin tocar el archivo original.
+         */
+        fun build(context: Context, name: String, passphrase: String): AppDatabase =
+            Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, name)
+                .openHelperFactory(
+                    SupportOpenHelperFactory(passphrase.toByteArray(Charsets.UTF_8))
+                )
+                .addMigrations(MIGRATION_4_5)
+                // Solo las BD LEGACY (v1–v3, de builds previos a la
+                // exportación de esquemas) se recrean: no existe su
+                // historial de esquemas para migrarlas. De v4 en
+                // adelante NO hay fallback: todo cambio exige su
+                // Migration (.addMigrations(MIGRATION_4_5, ...)).
+                .fallbackToDestructiveMigrationFrom(1, 2, 3)
+                .build()
+
         fun get(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: run {
                     val passphrase = DbCrypto.getOrCreatePassphrase(context)
                     // Migra la BD plana preexistente a SQLCipher (una vez)
                     DbCrypto.encryptIfPlaintext(context, "myfinances.db", passphrase)
-                    Room.databaseBuilder(
-                        context.applicationContext,
-                        AppDatabase::class.java,
-                        "myfinances.db"
-                    )
-                        .openHelperFactory(
-                            SupportOpenHelperFactory(passphrase.toByteArray(Charsets.UTF_8))
-                        )
-                        // Solo las BD LEGACY (v1–v3, de builds previos a la
-                        // exportación de esquemas) se recrean: no existe su
-                        // historial de esquemas para migrarlas. De v4 en
-                        // adelante NO hay fallback: todo cambio exige su
-                        // Migration (.addMigrations(MIGRATION_4_5, ...)).
-                        .fallbackToDestructiveMigrationFrom(1, 2, 3)
-                        .build()
+                    build(context, "myfinances.db", passphrase)
                 }
                     .also { db ->
                         INSTANCE = db

@@ -36,7 +36,14 @@ data class ParsedStatement(
     val statementBalanceMinor: Long?,   // deuda del periodo (NEGATIVA)
     val periodFromMillis: Long?,        // min fecha de movimientos
     val periodToMillis: Long?,          // max fecha de movimientos
-    val lastFourDigits: String?
+    val lastFourDigits: String?,
+    /**
+     * Compras en la sección en DÓLARES (no se importan: la app es solo
+     * COP). Se informan en el resumen para que el usuario las registre en
+     * pesos si no las tiene. Monto en centavos de DÓLAR.
+     */
+    val foreignPurchaseCount: Int = 0,
+    val foreignPurchasesMinor: Long = 0
 )
 
 object BancolombiaStatementParser {

@@ -47,6 +47,8 @@ object BancolombiaPdfStatementParser {
         // Sección de moneda vigente. Default PESOS: los extractos de un
         // solo cupo (COP) no traen el marcador y deben parsearse igual.
         var inPesos = true
+        var foreignCount = 0
+        var foreignMinor = 0L
 
         for (raw in text.lines()) {
             // Encabezados de sección de moneda: cambian a qué tabla estamos
@@ -60,9 +62,6 @@ object BancolombiaPdfStatementParser {
             // quedan como tokens limpios, independiente del espaciado.
             val s = raw.replace("$", "").replace("%", "").trim().replace(Regex("\\s+"), " ")
             if (s.isEmpty()) continue
-
-            // Movimientos en dólares: se omiten (la app es COP-only, sin FX).
-            if (!inPesos) continue
 
             val dm = dateRe.find(s) ?: continue
             val prefix = s.substring(0, dm.range.first).trim()
@@ -78,6 +77,17 @@ object BancolombiaPdfStatementParser {
             val amount = SmsParser.parseAmountToMinor(valorRaw) ?: continue
             if (amount == 0L) continue
             val negative = valorRaw.startsWith("-")
+
+            // Movimientos en dólares: NO se importan (la app es COP-only,
+            // sin FX). Solo se cuentan las compras (traen autorización;
+            // abonos e intereses no) para avisarlas en el resumen.
+            if (!inPesos) {
+                if (!negative && auth != null) {
+                    foreignCount++
+                    foreignMinor += amount
+                }
+                continue
+            }
 
             // Cuotas "N/M" en el segundo token (si las hay)
             var instCurrent: Int? = null
@@ -130,7 +140,9 @@ object BancolombiaPdfStatementParser {
             statementBalanceMinor = findBalance(text),
             periodFromMillis = dates.minOrNull(),
             periodToMillis = dates.maxOrNull(),
-            lastFourDigits = findLastFour(text)
+            lastFourDigits = findLastFour(text),
+            foreignPurchaseCount = foreignCount,
+            foreignPurchasesMinor = foreignMinor
         )
     }
 

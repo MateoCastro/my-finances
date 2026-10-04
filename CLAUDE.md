@@ -198,7 +198,23 @@ de plan, nuevas→inbox PENDING, ajuste de saldo). `StatementImportViewModel`
 "X nuevas, Y cuotas, Z ya existían"). Enruta a la cuenta por sus últimos
 4 dígitos; aplica MerchantAlias; categoría "Costos financieros" get-or-create.
 Cubre los formatos reales de los bancos del usuario (Bancolombia xlsx/PDF,
-Davivienda PDF/txt). NO se implementa OCR de PDF escaneado (ML Kit): el
+Davivienda PDF/txt).
+**Ajuste de saldo rehecho (2026-10-03, DB v5):** salía cada mes con valores
+considerables por artefactos, no por desfases reales: (a) el inbox truncaba
+centavos al confirmar y el dedup exacto ya no reconocía la línea al
+reimportar (interés contado dos veces); (b) duplicados aún PENDING no se
+proyectaban; (c) compras del día de corte que el banco factura el mes
+siguiente; (d) la parte en DÓLARES de la TC (compras y "pago dólares") entra a
+la deuda de la app pero no al "Pago total" en pesos. Ahora: dedup ±1 peso +
+mismo sentido + por `externalRef`; `Transaction.reconciled` marca lo que un
+extracto confirmó, y la verificación SOLO cuenta eso (+ source STATEMENT +
+líneas nuevas) — lo no confirmado queda fuera y se informa en el resumen;
+umbral $100; un ajuste por extracto (huella cuenta+corte, se reemplaza al
+reimportar). Cuotas: match por monto total + fecha de compra (ya no por
+comercio solo: en agregadores tipo "MERCADO PAGO" facturaba el plan de otra
+compra). El plan guarda el texto crudo del extracto; la UI de Diferidos
+muestra la descripción de la transacción ancla y abre su edición.
+NO se implementa OCR de PDF escaneado (ML Kit): el
 usuario no recibe extractos físicos/escaneados, así que no aporta valor.
 Objetivo y detalle original, por referencia:
 
@@ -364,7 +380,8 @@ monto para que el usuario complete a mano (nunca perder la captura).
   hasta que se justifique montar Hilt
 
 ### Room / base de datos
-- **Versión actual: 4.** Todo cambio de esquema exige: subir `version`,
+- **Versión actual: 5** (v5 = `transactions.reconciled`, `MIGRATION_4_5`
+  aditiva + backfill). Todo cambio de esquema exige: subir `version`,
   escribir la `Migration` y registrarla en `.addMigrations(...)`. Los
   esquemas se exportan a `app/schemas/` (versionados): comparar el JSON
   nuevo contra el anterior para escribir el SQL. NO hay

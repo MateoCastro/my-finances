@@ -153,6 +153,15 @@
     <string name="importing">Importando extracto…</string>
     <string name="import_done_title">Extracto importado</string>
     <string name="import_done_message">%1$d nuevas · %2$d cuotas actualizadas · %3$d ya existían</string>
+    <string name="import_adjustment_line">Ajuste de saldo pendiente: %1$s (revísalo en el Inbox).</string>
+    <plurals name="import_unreconciled">
+        <item quantity="one">%1$d movimiento de la tarjeta (%2$s) aún no aparece en ningún extracto, así que no se usó para el ajuste: puede ser en dólares, del próximo corte o un error.</item>
+        <item quantity="other">%1$d movimientos de la tarjeta (%2$s) aún no aparecen en ningún extracto, así que no se usaron para el ajuste: pueden ser en dólares, del próximo corte o errores.</item>
+    </plurals>
+    <plurals name="import_foreign_purchases">
+        <item quantity="one">El extracto trae %1$d compra en dólares (%2$s) que no se importa: regístrala en pesos si no la tienes.</item>
+        <item quantity="other">El extracto trae %1$d compras en dólares (%2$s) que no se importan: regístralas en pesos si no las tienes.</item>
+    </plurals>
     <string name="import_error_title">No se pudo importar</string>
     <string name="import_error_invalid">El archivo no parece un extracto válido.</string>
     <string name="import_error_account">No hay una cuenta con terminación %1$s. Créala primero (sus últimos 4 dígitos).</string>

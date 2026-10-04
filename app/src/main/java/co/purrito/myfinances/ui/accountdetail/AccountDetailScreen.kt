@@ -1,6 +1,7 @@
 package co.purrito.myfinances.ui.accountdetail
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ import co.purrito.myfinances.R
 import co.purrito.myfinances.ui.components.AppCard
 import co.purrito.myfinances.data.model.Account
 import co.purrito.myfinances.data.model.AccountType
+import co.purrito.myfinances.data.dao.DeferredPurchaseWithAnchor
 import co.purrito.myfinances.data.model.DeferredPurchase
 import co.purrito.myfinances.data.model.Transaction
 import co.purrito.myfinances.data.model.TransactionType
@@ -218,7 +220,9 @@ fun AccountDetailScreen(
                 }
 
                 if (showDeferred) {
-                    deferredSection(deferredPurchases)
+                    deferredSection(deferredPurchases) { anchorId ->
+                        viewModel.openAnchor(anchorId, onEditTransaction)
+                    }
                     return@LazyColumn
                 }
 
@@ -389,7 +393,10 @@ private fun BalanceColumn(accountId: Long) {
  * del mes seleccionado — un plan de cuotas vive a través de varios
  * extractos, así que siempre se listan todas las abiertas.
  */
-private fun LazyListScope.deferredSection(purchases: List<DeferredPurchase>) {
+private fun LazyListScope.deferredSection(
+    purchases: List<DeferredPurchaseWithAnchor>,
+    onPurchaseClick: (anchorTransactionId: Long) -> Unit
+) {
     item(key = "deferred-count") {
         Text(
             pluralStringResource(
@@ -417,11 +424,15 @@ private fun LazyListScope.deferredSection(purchases: List<DeferredPurchase>) {
         }
     } else {
         items(
-            purchases.sortedByDescending { it.purchaseDateMillis },
-            key = { "deferred-${it.id}" }
-        ) { purchase ->
+            purchases.sortedByDescending { it.purchase.purchaseDateMillis },
+            key = { "deferred-${it.purchase.id}" }
+        ) { item ->
             DeferredPurchaseCard(
-                purchase = purchase,
+                purchase = item.purchase,
+                // El nombre vive en la transacción (editable); `merchant`
+                // solo como respaldo si la transacción no tiene descripción
+                title = item.anchorDescription ?: item.anchorMerchantRaw ?: item.purchase.merchant,
+                onClick = { onPurchaseClick(item.anchorTransactionId) },
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
@@ -431,6 +442,8 @@ private fun LazyListScope.deferredSection(purchases: List<DeferredPurchase>) {
 @Composable
 private fun DeferredPurchaseCard(
     purchase: DeferredPurchase,
+    title: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Cuota: la del extracto si ya se conoce; si no, estimada total/n
@@ -447,7 +460,11 @@ private fun DeferredPurchaseCard(
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -455,7 +472,7 @@ private fun DeferredPurchaseCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        purchase.merchant,
+                        title,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
