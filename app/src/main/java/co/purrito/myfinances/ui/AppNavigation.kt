@@ -69,6 +69,9 @@ import co.purrito.myfinances.ui.addtransaction.AddTransactionSheet
 import co.purrito.myfinances.ui.inbox.InboxScreen
 import co.purrito.myfinances.ui.inbox.InboxViewModel
 import co.purrito.myfinances.ui.more.MoreScreen
+import co.purrito.myfinances.service.DeviceSms
+import co.purrito.myfinances.ui.smstemplates.SmsTeachScreen
+import co.purrito.myfinances.ui.smstemplates.SmsTemplatesScreen
 import co.purrito.myfinances.ui.stats.CategoryDetailScreen
 import co.purrito.myfinances.ui.stats.StatsScreen
 import co.purrito.myfinances.data.model.TransactionType
@@ -119,6 +122,10 @@ object Routes {
 
     const val INBOX = "inbox"
     const val MORE = "more"
+
+    // Hito 7: plantillas SMS y enseñar un SMS
+    const val SMS_TEMPLATES = "sms_templates"
+    const val SMS_TEACH = "sms_teach"
 }
 
 /* El formulario de transacción NO es una ruta: es un ModalBottomSheet
@@ -263,7 +270,10 @@ private fun AppBottomBar(
 @Composable
 fun AppNavigation(
     voiceRequest: Boolean = false,
-    onVoiceRequestHandled: () -> Unit = {}
+    onVoiceRequestHandled: () -> Unit = {},
+    // SMS a enseñar, desde la notificación de "SMS no reconocido"
+    teachRequest: DeviceSms? = null,
+    onTeachRequestHandled: () -> Unit = {}
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -280,6 +290,18 @@ fun AppNavigation(
         if (voiceRequest) {
             showVoiceCapture = true
             onVoiceRequestHandled()
+        }
+    }
+
+    // SMS que abre la pantalla de enseñar (desde la notificación). Se
+    // guarda aquí porque un DeviceSms no viaja cómodo como argumento de
+    // ruta; el ViewModel de la pantalla lo toma al crearse.
+    var smsToTeach by remember { mutableStateOf<DeviceSms?>(null) }
+    LaunchedEffect(teachRequest) {
+        if (teachRequest != null) {
+            smsToTeach = teachRequest
+            navController.navigate(Routes.SMS_TEACH)
+            onTeachRequestHandled()
         }
     }
 
@@ -420,7 +442,24 @@ fun AppNavigation(
             }
 
             composable(Routes.MORE) {
-                MoreScreen()
+                MoreScreen(onOpenSmsTemplates = { navController.navigate(Routes.SMS_TEMPLATES) })
+            }
+
+            composable(Routes.SMS_TEMPLATES) {
+                SmsTemplatesScreen(
+                    onBack = { navController.popBackStack() },
+                    onTeach = {
+                        smsToTeach = null
+                        navController.navigate(Routes.SMS_TEACH)
+                    }
+                )
+            }
+
+            composable(Routes.SMS_TEACH) {
+                SmsTeachScreen(
+                    initial = smsToTeach,
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable(

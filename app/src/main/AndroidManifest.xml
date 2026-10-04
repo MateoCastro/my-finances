@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
+    <!-- Aviso de SMS bancario no reconocido (Hito 7) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Registro por voz (Hito 6): dictado de transacciones -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
