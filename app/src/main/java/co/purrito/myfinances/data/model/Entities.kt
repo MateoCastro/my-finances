@@ -299,5 +299,12 @@ data class SmsTemplate(
      * null cuando el destino no se conoce (ej: avance de TC).
      */
     val counterAccountId: Long? = null,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    /**
+     * SMS de ejemplo con que el usuario ENSEÑÓ esta plantilla (Hito 7).
+     * null = plantilla por defecto del seed. (DB v6)
+     */
+    val exampleBody: String? = null,
+    /** Última vez que reconoció un SMS: diagnóstico en la pantalla de plantillas. */
+    val lastMatchedMillis: Long? = null
 )

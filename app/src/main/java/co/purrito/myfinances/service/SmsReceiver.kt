@@ -6,10 +6,6 @@ import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
 import co.purrito.myfinances.data.AppDatabase
-import co.purrito.myfinances.data.model.Transaction
-import co.purrito.myfinances.data.model.TransactionSource
-import co.purrito.myfinances.data.model.TransactionStatus
-import co.purrito.myfinances.data.model.TransactionType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,44 +53,24 @@ class SmsReceiver : BroadcastReceiver() {
                         val result = SmsParser.parse(sender, body, timestampMillis, templates)
                         if (result == null) {
                             Log.d(TAG, "Sin match para SMS de '$sender' (${templates.size} plantillas probadas)")
+                            // Aviso temprano: con pinta de movimiento bancario
+                            // pero sin plantilla → probablemente cambió el formato
+                            if (SmsCapture.looksLikeBankSms(sender, body)) {
+                                SmsNotifier.notifyUnrecognized(context, sender, body, timestampMillis)
+                            }
                             return@forEach
                         }
 
-                        // Deduplicación: ignora si ya tenemos este SMS
-                        if (db.transactionDao().existsByExternalRef(result.externalRef)) {
-                            Log.d(TAG, "SMS duplicado ignorado (externalRef ya existe)")
-                            return@forEach
-                        }
-
-                        // Diccionario de alias: si el comercio ya es conocido,
-                        // la transacción llega al inbox con nombre legible y
-                        // categoría sugerida (el usuario solo confirma).
-                        val alias = result.merchantRaw
-                            ?.let { db.merchantAliasDao().findMatch(it) }
-
-                        val id = db.transactionDao().insert(
-                            Transaction(
-                                accountId = result.accountId,
-                                counterAccountId = if (result.type == TransactionType.TRANSFER)
-                                    result.counterAccountId else null,
-                                type = result.type,
-                                amountMinor = result.amountMinor,
-                                categoryId = if (result.type == TransactionType.TRANSFER)
-                                    null else alias?.defaultCategoryId,
-                                dateMillis = timestampMillis,
-                                description = alias?.displayName,
-                                merchantRaw = result.merchantRaw,
-                                source = TransactionSource.SMS,
-                                status = TransactionStatus.PENDING,
-                                externalRef = result.externalRef,
-                                rawText = body
+                        val id = SmsCapture.capture(db, body, timestampMillis, result)
+                        if (id == null) {
+                            Log.d(TAG, "SMS duplicado ignorado (ya estaba en la app)")
+                        } else {
+                            Log.d(
+                                TAG,
+                                "Transacción PENDING #$id creada: ${result.type} " +
+                                    "${result.amountMinor} centavos, comercio=${result.merchantRaw}"
                             )
-                        )
-                        Log.d(
-                            TAG,
-                            "Transacción PENDING #$id creada: ${result.type} " +
-                                "${result.amountMinor} centavos, comercio=${result.merchantRaw}"
-                        )
+                        }
                     }
             } catch (e: Exception) {
                 Log.e(TAG, "Error procesando SMS", e)

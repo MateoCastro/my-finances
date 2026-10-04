@@ -205,4 +205,51 @@
     <string name="language_subtitle">Idioma de la aplicación</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
+    <!-- Hito 7: plantillas SMS / enseñar SMS -->
+    <string name="sms_templates_title">Plantillas SMS</string>
+    <string name="sms_templates_subtitle">Cómo la app reconoce los SMS del banco; enseñar nuevos</string>
+    <string name="sms_templates_hint">Si un banco cambia el formato de sus SMS, enséñale a la app uno real y lo volverá a reconocer.</string>
+    <string name="sms_teach_action">Enseñar un SMS</string>
+    <string name="sms_template_taught">Enseñada</string>
+    <string name="sms_template_last_match">Último SMS reconocido: %1$s</string>
+    <string name="sms_template_never_matched">Aún no ha reconocido ningún SMS</string>
+    <string name="sms_find_missed">Buscar SMS perdidos</string>
+    <string name="sms_template_delete_title">¿Eliminar plantilla?</string>
+    <string name="sms_template_delete_message">Los SMS de este tipo dejarán de reconocerse. Las transacciones ya registradas no cambian.</string>
+    <string name="sms_missed_title">SMS perdidos</string>
+    <string name="sms_missed_message">Estos SMS de los últimos 30 días se reconocen ahora pero no están en la app. Elige cuáles llevar al Inbox.</string>
+    <string name="sms_missed_none">No hay SMS perdidos en los últimos 30 días.</string>
+    <plurals name="sms_recover_action">
+        <item quantity="one">Agregar %1$d al Inbox</item>
+        <item quantity="other">Agregar %1$d al Inbox</item>
+    </plurals>
+    <plurals name="sms_recovered">
+        <item quantity="one">Se agregó %1$d transacción al Inbox.</item>
+        <item quantity="other">Se agregaron %1$d transacciones al Inbox.</item>
+    </plurals>
+    <string name="sms_teach_title">Enseñar un SMS</string>
+    <string name="sms_teach_pick_hint">Elige el SMS del banco que la app debe reconocer (últimos 30 días).</string>
+    <string name="sms_teach_no_sms">No hay SMS de bancos en los últimos 30 días.</string>
+    <string name="sms_recognized">Reconocido</string>
+    <string name="sms_not_recognized">No reconocido</string>
+    <string name="sms_teach_edit_hint">Marca el monto y, si quieres, el comercio: selecciona el texto en el SMS y toca \"Marcar como comercio\".</string>
+    <string name="sms_teach_amount">Monto</string>
+    <string name="sms_teach_mark_merchant">Marcar como comercio</string>
+    <string name="sms_teach_mark_amount">Marcar como monto</string>
+    <string name="sms_teach_clear_merchant">Quitar el comercio</string>
+    <string name="sms_teach_bank">Banco</string>
+    <string name="sms_teach_counter_unknown">Desconocida</string>
+    <string name="sms_teach_preview">Vista previa</string>
+    <plurals name="sms_teach_matches_others">
+        <item quantity="one">También reconoce %1$d de %2$d SMS reciente de %3$s.</item>
+        <item quantity="other">También reconoce %1$d de %2$d SMS recientes de %3$s.</item>
+    </plurals>
+    <string name="sms_teach_need_amount">Marca el monto para continuar.</string>
+    <string name="sms_teach_invalid">Con lo marcado no se puede reconocer este SMS. Revisa el monto y el comercio.</string>
+    <string name="sms_teach_save">Guardar plantilla</string>
+    <string name="sms_teach_saved">Plantilla guardada</string>
+    <string name="sms_teach_done">Listo</string>
+    <string name="sms_unrecognized_channel">SMS bancarios no reconocidos</string>
+    <string name="sms_unrecognized_title">SMS de %1$s no reconocido</string>
+    <string name="sms_unrecognized_text">Parece un movimiento bancario. Toca para enseñárselo a la app.</string>
 </resources>

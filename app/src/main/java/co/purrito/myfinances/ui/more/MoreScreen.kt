@@ -53,6 +53,7 @@ import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.Globe
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageSquare
 import com.composables.icons.lucide.Tag
 import java.util.Locale
 
@@ -81,6 +82,7 @@ private val statementMimeTypes = arrayOf(
 
 @Composable
 fun MoreScreen(
+    onOpenSmsTemplates: () -> Unit,
     importViewModel: StatementImportViewModel = viewModel()
 ) {
     var showCategories by rememberSaveable { mutableStateOf(false) }
@@ -116,6 +118,14 @@ fun MoreScreen(
                 title = stringResource(R.string.import_statement_title),
                 subtitle = stringResource(R.string.import_statement_subtitle),
                 onClick = { pickStatement.launch(statementMimeTypes) },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+
+            MoreEntry(
+                icon = Lucide.MessageSquare,
+                title = stringResource(R.string.sms_templates_title),
+                subtitle = stringResource(R.string.sms_templates_subtitle),
+                onClick = onOpenSmsTemplates,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
 

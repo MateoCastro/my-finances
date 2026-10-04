@@ -1,6 +1,7 @@
 package co.purrito.myfinances.ui.transactions
 
 import android.Manifest
+import android.os.Build
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -118,7 +119,15 @@ fun TransactionsScreen(
     ) { /* el receiver funciona apenas se concede; la UI no cambia */ }
 
     LaunchedEffect(Unit) {
-        val smsPermissions = arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS)
+        // + notificaciones (Android 13+): el aviso de SMS bancario no
+        // reconocido (Hito 7) las necesita
+        val smsPermissions = buildList {
+            add(Manifest.permission.RECEIVE_SMS)
+            add(Manifest.permission.READ_SMS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
         val missing = smsPermissions.filter {
             ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
         }

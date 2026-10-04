@@ -58,6 +58,20 @@ class SmsParserTest {
     // --- Bancolombia: compras ----------------------------------------
 
     @Test
+    fun `Davivienda desde el remitente nuevo 87188 va a la TC Davivienda`() {
+        // Oct 2026: Davivienda pasó de 89xxxx a 87188 (que también encaja en
+        // el patrón de Bancolombia; el cuerpo es el que distingue al banco)
+        val r = parse(
+            "87188",
+            "DAVIVIENDA: Compra . Aprobado(a), \$25,300, Tarjeta   *1111, Hora 01:46,Lugar DLO*Didi              ."
+        )
+        assertNotNull(r)
+        assertEquals(tcDavivienda, r!!.accountId)
+        assertEquals(2_530_000L, r.amountMinor)
+        assertEquals("DLO*Didi", r.merchantRaw)
+    }
+
+    @Test
     fun `compra TC variante asociada`() {
         val r = parse(
             "85540",

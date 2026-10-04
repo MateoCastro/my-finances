@@ -205,4 +205,51 @@
     <string name="language_subtitle">App language</string>
     <string name="language_es">Español</string>
     <string name="language_en">English</string>
+    <!-- Milestone 7: SMS templates / teach SMS -->
+    <string name="sms_templates_title">SMS templates</string>
+    <string name="sms_templates_subtitle">How the app recognizes bank SMS; teach new ones</string>
+    <string name="sms_templates_hint">If a bank changes its SMS format, teach the app a real one and it will recognize them again.</string>
+    <string name="sms_teach_action">Teach an SMS</string>
+    <string name="sms_template_taught">Taught</string>
+    <string name="sms_template_last_match">Last recognized SMS: %1$s</string>
+    <string name="sms_template_never_matched">Has not recognized any SMS yet</string>
+    <string name="sms_find_missed">Find missed SMS</string>
+    <string name="sms_template_delete_title">Delete template?</string>
+    <string name="sms_template_delete_message">SMS of this kind will no longer be recognized. Transactions already recorded do not change.</string>
+    <string name="sms_missed_title">Missed SMS</string>
+    <string name="sms_missed_message">These SMS from the last 30 days are recognized now but are not in the app. Choose which ones to send to the Inbox.</string>
+    <string name="sms_missed_none">No missed SMS in the last 30 days.</string>
+    <plurals name="sms_recover_action">
+        <item quantity="one">Add %1$d to Inbox</item>
+        <item quantity="other">Add %1$d to Inbox</item>
+    </plurals>
+    <plurals name="sms_recovered">
+        <item quantity="one">%1$d transaction was added to the Inbox.</item>
+        <item quantity="other">%1$d transactions were added to the Inbox.</item>
+    </plurals>
+    <string name="sms_teach_title">Teach an SMS</string>
+    <string name="sms_teach_pick_hint">Pick the bank SMS the app should recognize (last 30 days).</string>
+    <string name="sms_teach_no_sms">No bank SMS in the last 30 days.</string>
+    <string name="sms_recognized">Recognized</string>
+    <string name="sms_not_recognized">Not recognized</string>
+    <string name="sms_teach_edit_hint">Mark the amount and, optionally, the merchant: select the text in the SMS and tap \"Mark as merchant\".</string>
+    <string name="sms_teach_amount">Amount</string>
+    <string name="sms_teach_mark_merchant">Mark as merchant</string>
+    <string name="sms_teach_mark_amount">Mark as amount</string>
+    <string name="sms_teach_clear_merchant">Clear the merchant</string>
+    <string name="sms_teach_bank">Bank</string>
+    <string name="sms_teach_counter_unknown">Unknown</string>
+    <string name="sms_teach_preview">Preview</string>
+    <plurals name="sms_teach_matches_others">
+        <item quantity="one">It also recognizes %1$d of %2$d recent SMS from %3$s.</item>
+        <item quantity="other">It also recognizes %1$d of %2$d recent SMS from %3$s.</item>
+    </plurals>
+    <string name="sms_teach_need_amount">Mark the amount to continue.</string>
+    <string name="sms_teach_invalid">With what is marked this SMS cannot be recognized. Check the amount and the merchant.</string>
+    <string name="sms_teach_save">Save template</string>
+    <string name="sms_teach_saved">Template saved</string>
+    <string name="sms_teach_done">Done</string>
+    <string name="sms_unrecognized_channel">Unrecognized bank SMS</string>
+    <string name="sms_unrecognized_title">Unrecognized SMS from %1$s</string>
+    <string name="sms_unrecognized_text">Looks like a bank transaction. Tap to teach it to the app.</string>
 </resources>

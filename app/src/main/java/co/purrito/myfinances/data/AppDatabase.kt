@@ -66,6 +66,22 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+/**
+ * v5 → v6 (Hito 7, enseñar SMS): `sms_templates.exampleBody` y
+ * `lastMatchedMillis`. Aditiva. Además corrige en los datos el remitente
+ * de las plantillas de Davivienda: el banco pasó de 89xxxx a 87188 y sus
+ * SMS dejaron de reconocerse (el patrón viejo exigía "89").
+ */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE sms_templates ADD COLUMN exampleBody TEXT")
+        db.execSQL("ALTER TABLE sms_templates ADD COLUMN lastMatchedMillis INTEGER")
+        db.execSQL(
+            """UPDATE sms_templates SET senderPattern = '^8\d{4,5}$' WHERE senderPattern = '^89\d{4}$'"""
+        )
+    }
+}
+
 @Database(
     entities = [
         Account::class,
@@ -75,7 +91,7 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         MerchantAlias::class,
         SmsTemplate::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -101,7 +117,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .openHelperFactory(
                     SupportOpenHelperFactory(passphrase.toByteArray(Charsets.UTF_8))
                 )
-                .addMigrations(MIGRATION_4_5)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
                 // Solo las BD LEGACY (v1–v3, de builds previos a la
                 // exportación de esquemas) se recrean: no existe su
                 // historial de esquemas para migrarlas. De v4 en

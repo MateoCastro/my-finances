@@ -5,6 +5,8 @@ import co.purrito.myfinances.data.model.TransactionType
 import java.security.MessageDigest
 
 data class SmsParseResult(
+    /** Plantilla que reconoció el SMS (diagnóstico: lastMatchedMillis). */
+    val templateId: Long,
     val accountId: Long,
     val counterAccountId: Long?,
     val amountMinor: Long,
@@ -47,6 +49,7 @@ object SmsParser {
             val merchant = match.groupOrNull("merchant")?.trim()?.ifBlank { null }
 
             return SmsParseResult(
+                templateId = template.id,
                 accountId = template.accountId,
                 counterAccountId = template.counterAccountId,
                 amountMinor = amountMinor,

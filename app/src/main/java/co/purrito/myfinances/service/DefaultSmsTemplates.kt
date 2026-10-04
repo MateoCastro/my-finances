@@ -12,7 +12,9 @@ import co.purrito.myfinances.data.model.TransactionType
  *
  * Remitentes observados:
  *   Bancolombia: 85540, 85784, 87400  →  ^8[57]\d{3}$
- *   Davivienda:  890077, 891000       →  ^89\d{4}$
+ *   Davivienda:  890077, 891000, 87188 →  ^8\d{4,5}$
+ *     (2026-10: Davivienda pasó a 87188, que también encaja en el patrón
+ *     de Bancolombia; no importa: el CUERPO distingue al banco.)
  *
  * Nota sobre montos: Bancolombia mezcla formato colombiano
  * ("44.444,44") y americano ("10,000.00") según el canal; la
@@ -20,7 +22,7 @@ import co.purrito.myfinances.data.model.TransactionType
  * ===================================================================== */
 
 private const val SENDER_BANCOLOMBIA = """^8[57]\d{3}$"""
-private const val SENDER_DAVIVIENDA = """^89\d{4}$"""
+private const val SENDER_DAVIVIENDA = """^8\d{4,5}$"""
 
 object DefaultSmsTemplates {
 

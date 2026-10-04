@@ -360,6 +360,36 @@ monto para que el usuario complete a mano (nunca perder la captura).
   requiere red y envía datos fuera del dispositivo — debe ser opt-in
   explícito del usuario en ajustes.
 
+### ✅ Hito 7 — Enseñar SMS (plantillas dinámicas)
+**Completado (2026-10-03).** Motivo: Davivienda cambió su remitente de
+89xxxx a 87188 (que además encaja en el patrón de Bancolombia) y sus SMS
+dejaron de reconocerse en silencio desde el 2026-09-11. Las plantillas ya
+vivían en BD, pero no había forma de editarlas sin código.
+- `domain/SmsTemplateGenerator.kt` (PURO, tests en SmsTemplateGeneratorTest):
+  de UN SMS de ejemplo + rangos marcados (monto, comercio opcional) genera el
+  `bodyPattern`. Texto fijo: palabras/signos literales (distingue "Compra" de
+  "Avance"), espacios `\s*`, números `\d+` salvo los dígitos tras `*` (últimos
+  4: una plantilla por tarjeta), `$`/`COP` antes del monto intercambiables,
+  cola del mensaje recortada a 3 piezas. Remitente: código corto numérico →
+  `^\d{4,6}$` (los bancos rotan códigos; el cuerpo distingue al banco); largo o
+  alfanumérico → exacto. `amountCandidates` sugiere los montos.
+- UI: Más → "Plantillas SMS" (`ui/smstemplates/`): lista con último SMS
+  reconocido (diagnóstico), activar/desactivar, borrar solo las enseñadas,
+  "Buscar SMS perdidos". "Enseñar un SMS": elegir de la bandeja (READ_SMS),
+  marcar monto (chips) y comercio (selección de texto), tipo/cuenta/destino,
+  vista previa (qué extrae y cuántos SMS recientes del remitente reconoce).
+  Cuenta sugerida por los últimos 4 del SMS.
+- Las plantillas enseñadas se prueban ANTES que las de fábrica.
+- Recuperación (`service/SmsRecovery.kt`): SMS de los últimos 30 días que
+  hoy se reconocen y no están en la app (dedup por externalRef y por
+  `rawText`); el usuario ELIGE cuáles van al inbox (no se agregan solos: un
+  SMS rechazado a propósito no debe resucitar).
+- Aviso temprano: SMS de código corto con pinta de monto que ninguna
+  plantilla reconoce → notificación (`service/SmsNotifier.kt`,
+  POST_NOTIFICATIONS) que abre "Enseñar" con ese SMS
+  (`MainActivity.ACTION_TEACH_SMS`).
+- Captura compartida receptor/recuperación en `service/SmsCapture.kt`.
+
 ---
 
 ## Convenciones de código
@@ -380,8 +410,9 @@ monto para que el usuario complete a mano (nunca perder la captura).
   hasta que se justifique montar Hilt
 
 ### Room / base de datos
-- **Versión actual: 5** (v5 = `transactions.reconciled`, `MIGRATION_4_5`
-  aditiva + backfill). Todo cambio de esquema exige: subir `version`,
+- **Versión actual: 6** (v5 = `transactions.reconciled`, `MIGRATION_4_5`
+  aditiva + backfill; v6 = `sms_templates.exampleBody/lastMatchedMillis` +
+  corrección del remitente de Davivienda, `MIGRATION_5_6`). Todo cambio de esquema exige: subir `version`,
   escribir la `Migration` y registrarla en `.addMigrations(...)`. Los
   esquemas se exportan a `app/schemas/` (versionados): comparar el JSON
   nuevo contra el anterior para escribir el SQL. NO hay

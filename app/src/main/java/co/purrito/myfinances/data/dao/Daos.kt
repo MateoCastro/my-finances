@@ -273,6 +273,14 @@ interface TransactionDao {
     @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE externalRef = :ref)")
     suspend fun existsByExternalRef(ref: String): Boolean
 
+    /**
+     * ¿Ya hay una transacción nacida de este SMS? Complementa a externalRef
+     * al recuperar SMS de la bandeja: la marca de tiempo del proveedor de
+     * SMS puede no coincidir con la que vio el receptor.
+     */
+    @Query("SELECT EXISTS(SELECT 1 FROM transactions WHERE rawText = :body)")
+    suspend fun existsByRawText(body: String): Boolean
+
     @Query("SELECT * FROM transactions WHERE externalRef = :ref LIMIT 1")
     suspend fun findByExternalRef(ref: String): Transaction?
 
@@ -491,10 +499,28 @@ interface SmsTemplateDao {
     @Update
     suspend fun update(template: SmsTemplate)
 
-    /** Orden por id = orden de inserción: la primera que matchea gana. */
-    @Query("SELECT * FROM sms_templates WHERE enabled = 1 ORDER BY id")
+    @Delete
+    suspend fun delete(template: SmsTemplate)
+
+    /**
+     * La primera que matchea gana. Las ENSEÑADAS por el usuario van
+     * primero (si enseñó una es porque las de fábrica no servían para ese
+     * SMS); entre las de fábrica, orden de inserción (importa: el pago de
+     * TC va antes del pago PSE porque ambos empiezan por "Pagaste").
+     */
+    @Query("SELECT * FROM sms_templates WHERE enabled = 1 ORDER BY (exampleBody IS NULL), id")
     suspend fun getEnabled(): List<SmsTemplate>
 
-    @Query("SELECT * FROM sms_templates ORDER BY bankName")
+    @Query("SELECT * FROM sms_templates ORDER BY (exampleBody IS NULL), bankName, id")
     fun observeAll(): Flow<List<SmsTemplate>>
+
+    @Query("SELECT * FROM sms_templates WHERE id = :id")
+    suspend fun getById(id: Long): SmsTemplate?
+
+    @Query("UPDATE sms_templates SET enabled = :enabled WHERE id = :id")
+    suspend fun setEnabled(id: Long, enabled: Boolean)
+
+    /** Diagnóstico: cuándo reconoció un SMS por última vez. */
+    @Query("UPDATE sms_templates SET lastMatchedMillis = :millis WHERE id = :id")
+    suspend fun markMatched(id: Long, millis: Long)
 }
